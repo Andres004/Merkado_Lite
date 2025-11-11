@@ -1,9 +1,15 @@
-import Image from "next/image";
+// mklite_frontend/app/page.tsx
 
-export default function Home() {
+import { features } from 'process';
+import OfferBanner from './components/OfferBanner'; 
+import ServicesSection from './components/ServicesSection';
+
+export default function HomePage() {
   return (
-    <div>
-      <h1>Bienvenido a merkado lite!!</h1>
-    </div>
+    <main>
+      <OfferBanner />
+      <ServicesSection />
+      {/* ⬅️ Aquí irán los demás componentes: Servicios, Categorías, Productos... */}
+    </main>
   );
-}
+} 
