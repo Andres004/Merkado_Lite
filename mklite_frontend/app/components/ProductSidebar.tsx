@@ -6,7 +6,7 @@ import { ChevronUp } from 'lucide-react';
 const categories = [
   "Frutas y Verduras", "Carnes", "Mascotas", "Panadería", 
   "Lácteos", "Cuidado del Hogar", "Cuidado Personal", "Bebidas", 
-  "Cuidado del Bebé", "Fiambres y Embutidos", "Snacks"
+  "Cuidado del Bebé", "Fiambres y Embutidos", "Snacks","Congelados"
 ];
 
 const ProductSidebar = () => {
