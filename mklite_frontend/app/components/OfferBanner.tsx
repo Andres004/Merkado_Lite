@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 
 const OfferBanner = () => {
   // 💡 NOTA: La ruta comienza con /images/ porque Next.js ignora el directorio 'public'.
@@ -33,9 +34,11 @@ const OfferBanner = () => {
           </p>
           
           {/* Botón de Ofertas */}
-          <button className="bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-8 rounded-md shadow-lg transition duration-150">
-            Ver ofertas
-          </button>
+          <Link href="/ofertas" passHref legacyBehavior>
+            <button className="bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-8 rounded-md shadow-lg transition duration-150">
+              Ver ofertas
+            </button>
+          </Link>
         </div>
 
       </div>
