@@ -7,7 +7,7 @@ export const AppDataSource = new DataSource({
     port: 3306,
     username: "merkado_admin",
     password: "123456789",
-    database: "mklite",
+    database: 'merkado_lite',
     synchronize: true,
     logging: true,
     entities: [User],
