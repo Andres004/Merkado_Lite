@@ -2,13 +2,13 @@ import { DataSource } from "typeorm";
 import { User } from "./entity/user.entity";
 
 export const AppDataSource = new DataSource({
-    type: "postgres",
+    type: "mysql",
     host: "localhost",
-    port: 5432,
+    port: 3306,
     username: "merkado_admin",
-    password: "123456789",
+    password: "123",
     database: "mklite",
-    synchronize: false,
+    synchronize: true,
     logging: true,
     entities: [User],
     subscribers: [],
