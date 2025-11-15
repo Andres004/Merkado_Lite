@@ -1,5 +1,6 @@
 import { DataSource } from "typeorm";
 import { User } from "./entity/user.entity";
+import { Product } from "./entity/product.entity";
 
 export const AppDataSource = new DataSource({
     type: "mysql",
@@ -10,7 +11,7 @@ export const AppDataSource = new DataSource({
     database: "mklite",
     synchronize: true,
     logging: true,
-    entities: [User],
+    entities: [User, Product],
     subscribers: [],
     migrations: [],
 })
