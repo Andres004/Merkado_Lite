@@ -6,7 +6,7 @@ export const AppDataSource = new DataSource({
     host: "localhost",
     port: 3306,
     username: "merkado_admin",
-    password: "123456789",
+    password: "123", 
     database: "mklite",
     synchronize: true,
     logging: true,
