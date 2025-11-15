@@ -1,4 +1,5 @@
-import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import { CartItem } from './cartitem.entity';
 
 @Entity('producto') 
 export class Product {
@@ -16,4 +17,7 @@ export class Product {
 
     @Column({ length: 255 })
     imagen_url: string;
+
+    @OneToMany(() => CartItem, (cartItem) => cartItem.product)
+  cartItems: CartItem[];
 }
