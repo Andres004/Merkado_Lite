@@ -22,11 +22,23 @@ export class UserService {
     }
 
     async getAllUsers() {
-        return await this.getRepository().find();
+        return await this.getRepository().find({
+            relations: [
+                'userRoles',      
+                'userRoles.rol' 
+            ],
+        });
     }
     
     async getUserById(id_usuario: number): Promise<User> {
-        const user = await this.getRepository().findOneBy({ id_usuario });
+        const user = await this.getRepository().findOne({
+            where: { id_usuario },
+            relations: [
+                'userRoles',      
+                'userRoles.rol'   
+            ],
+        });
+
         if (!user) {
             throw new NotFoundException(`Usuario con ID ${id_usuario} no encontrado`);
         }

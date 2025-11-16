@@ -5,9 +5,11 @@ import { UserModule } from './user/user.module';
 import { ProductModule } from './product/product.module';
 import { CartModule } from './cart/cart.module';
 import { CartItemModule } from './cartitem/cartitem.module';
+import { RoleModule } from './role/role.module';
+import { UserroleModule } from './userrole/userrole.module';
 
 @Module({
-  imports: [UserModule, ProductModule, CartModule, CartItemModule],
+  imports: [UserModule, ProductModule, CartModule, CartItemModule, RoleModule, UserroleModule],
   controllers: [AppController],
   providers: [AppService],
 })
