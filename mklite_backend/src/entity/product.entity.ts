@@ -1,4 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import { ProductCategory } from './productcategory.entity';
 import { CartItem } from './cartitem.entity';
 
 @Entity('producto') 
@@ -19,5 +20,8 @@ export class Product {
     imagen_url: string;
 
     @OneToMany(() => CartItem, (cartItem) => cartItem.product)
-  cartItems: CartItem[];
+    cartItems: CartItem[];
+
+    @OneToMany(() => ProductCategory, (pc) => pc.producto)
+    productCategories: ProductCategory[];
 }
