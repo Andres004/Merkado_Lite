@@ -1,4 +1,4 @@
-"use client"
+/*"use client"
 
 import { createUser, deleteUser, getUsers } from "../services/user.service";
 import { useEffect, useState } from "react";
@@ -58,6 +58,142 @@ export default function Usuario() {
             <button className={styles.user_card_delete_button} onClick={() => deleteSelectedUser(user.ci)}>Eliminar</button>
           </div>
         )) }
+      </div>
+    </div>
+  );
+}*/
+
+// mklite_frontend/app/user/page.tsx
+// mklite_frontend/app/user/page.tsx
+
+"use client"; // Necesario para usar useState
+
+import React, { useState } from 'react';
+import Image from 'next/image';
+
+// Mocks de Imágenes
+const promoImageUrl = '/images/auth-promo.jpg'; 
+
+// --- Componentes de Formulario (UI Pura) ---
+
+const LoginForm = () => (
+  <form className="space-y-4 pt-6" onSubmit={(e) => e.preventDefault()}> {/* PreventDefault para evitar recarga */}
+    <input
+      type="email"
+      placeholder="Correo Electrónico"
+      className="w-full border border-gray-300 p-3 rounded-md focus:ring-red-500 focus:border-red-500"
+    />
+    <input
+      type="password"
+      placeholder="Contraseña"
+      className="w-full border border-gray-300 p-3 rounded-md focus:ring-red-500 focus:border-red-500"
+    />
+    <a href="#" className="text-sm text-gray-500 hover:text-red-600 block pt-2">
+      ¿Olvidaste tu contraseña?
+    </a>
+    <button
+      type="submit"
+      className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-md shadow-md transition duration-150"
+    >
+      INICIAR SESIÓN
+    </button>
+  </form>
+);
+
+const RegisterForm = () => (
+  <form className="grid grid-cols-2 gap-4 pt-6" onSubmit={(e) => e.preventDefault()}> {/* PreventDefault para evitar recarga */}
+    <input
+      type="text"
+      placeholder="Nombre Completo"
+      className="col-span-2 border border-gray-300 p-3 rounded-md focus:ring-red-500 focus:border-red-500"
+    />
+    <input
+      type="email"
+      placeholder="Correo Electrónico"
+      className="border border-gray-300 p-3 rounded-md focus:ring-red-500 focus:border-red-500"
+    />
+    <input
+      type="tel"
+      placeholder="Celular"
+      className="border border-gray-300 p-3 rounded-md focus:ring-red-500 focus:border-red-500"
+    />
+    <input
+      type="password"
+      placeholder="Contraseña"
+      className="border border-gray-300 p-3 rounded-md focus:ring-red-500 focus:border-red-500"
+    />
+    <input
+      type="password"
+      placeholder="Confirmar Contraseña"
+      className="border border-gray-300 p-3 rounded-md focus:ring-red-500 focus:border-red-500"
+    />
+    
+    <button
+      type="submit"
+      className="bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-md shadow-md transition duration-150 col-span-2"
+    >
+      CREAR CUENTA
+    </button>
+  </form>
+);
+
+
+// --- Componente Principal: Page ---
+export default function UserPage() {
+  const [activeTab, setActiveTab] = useState<'login' | 'register'>('register'); // Mantenemos Registro como pestaña activa por defecto
+
+  return (
+    <div className="min-h-[80vh] flex items-center justify-center bg-gray-100 py-12">
+      <div className="max-w-4xl w-full bg-white shadow-xl rounded-lg overflow-hidden flex">
+        
+        {/* Columna Izquierda: Imagen Promocional */}
+        <div className="w-1/2 relative bg-gray-800 hidden md:block">
+          <Image
+            src={promoImageUrl}
+            alt="Mercado Fácil"
+            fill
+            style={{ objectFit: 'cover' }}
+            className="opacity-70"
+            priority
+          />
+          {/* Texto Promocional Superpuesto */}
+          <div className="absolute inset-0 flex flex-col justify-end p-8 text-white z-10">
+            <h2 className="text-4xl font-bold leading-tight mb-2">¡Tu mercado fácil, tu vida simple!</h2>
+            <p className="text-xl font-semibold text-red-500">MERKADO LITE</p>
+          </div>
+        </div>
+
+        {/* Columna Derecha: Formularios de Autenticación */}
+        <div className="w-full md:w-1/2 p-8">
+          
+          {/* Pestañas de Navegación */}
+          <div className="flex border-b border-gray-200">
+            <button
+              onClick={() => setActiveTab('login')}
+              className={`flex-1 text-center py-3 font-semibold transition duration-150 ${
+                activeTab === 'login'
+                  ? 'text-red-600 border-b-2 border-red-600'
+                  : 'text-gray-500 hover:text-red-500'
+              }`}
+            >
+              INICIAR SESIÓN
+            </button>
+            <button
+              onClick={() => setActiveTab('register')}
+              className={`flex-1 text-center py-3 font-semibold transition duration-150 ${
+                activeTab === 'register'
+                  ? 'text-red-600 border-b-2 border-red-600'
+                  : 'text-gray-500 hover:text-red-500'
+              }`}
+            >
+              REGISTRARME
+            </button>
+          </div>
+
+          {/* Renderizado del Formulario Activo */}
+          {activeTab === 'login' ? <LoginForm /> : <RegisterForm />}
+          
+        </div>
       </div>
     </div>
   );
