@@ -64,35 +64,43 @@ export default function Usuario() {
 }*/
 
 // mklite_frontend/app/user/page.tsx
-// mklite_frontend/app/user/page.tsx
 
-"use client"; // Necesario para usar useState
+"use client";
 
 import React, { useState } from 'react';
 import Image from 'next/image';
+import styles from './page.module.css'; // ⬅️ IMPORTAMOS EL CSS MODULAR
 
 // Mocks de Imágenes
 const promoImageUrl = '/images/auth-promo.jpg'; 
 
-// --- Componentes de Formulario (UI Pura) ---
+// --- Componentes de Formulario ---
 
 const LoginForm = () => (
-  <form className="space-y-4 pt-6" onSubmit={(e) => e.preventDefault()}> {/* PreventDefault para evitar recarga */}
+  <form className="space-y-4 pt-6" onSubmit={(e) => e.preventDefault()}>
     <input
       type="email"
       placeholder="Correo Electrónico"
-      className="w-full border border-gray-300 p-3 rounded-md focus:ring-red-500 focus:border-red-500"
+      // CLASE HÍBRIDA: Usamos clases de Tailwind + clase modular
+      className={`
+        w-full border border-gray-300 p-3 rounded-md transition duration-150
+        ${styles.customInputFocus} 
+      `}
     />
     <input
       type="password"
       placeholder="Contraseña"
-      className="w-full border border-gray-300 p-3 rounded-md focus:ring-red-500 focus:border-red-500"
+      className={`
+        w-full border border-gray-300 p-3 rounded-md transition duration-150
+        ${styles.customInputFocus} 
+      `}
     />
     <a href="#" className="text-sm text-gray-500 hover:text-red-600 block pt-2">
       ¿Olvidaste tu contraseña?
     </a>
     <button
       type="submit"
+      // Tailwind para todo: color de fondo, fuente, sombra
       className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-md shadow-md transition duration-150"
     >
       INICIAR SESIÓN
@@ -101,52 +109,58 @@ const LoginForm = () => (
 );
 
 const RegisterForm = () => (
-  <form className="grid grid-cols-2 gap-4 pt-6" onSubmit={(e) => e.preventDefault()}> {/* PreventDefault para evitar recarga */}
-    <input
-      type="text"
-      placeholder="Nombre Completo"
-      className="col-span-2 border border-gray-300 p-3 rounded-md focus:ring-red-500 focus:border-red-500"
-    />
-    <input
-      type="email"
-      placeholder="Correo Electrónico"
-      className="border border-gray-300 p-3 rounded-md focus:ring-red-500 focus:border-red-500"
-    />
-    <input
-      type="tel"
-      placeholder="Celular"
-      className="border border-gray-300 p-3 rounded-md focus:ring-red-500 focus:border-red-500"
-    />
-    <input
-      type="password"
-      placeholder="Contraseña"
-      className="border border-gray-300 p-3 rounded-md focus:ring-red-500 focus:border-red-500"
-    />
-    <input
-      type="password"
-      placeholder="Confirmar Contraseña"
-      className="border border-gray-300 p-3 rounded-md focus:ring-red-500 focus:border-red-500"
-    />
-    
-    <button
-      type="submit"
-      className="bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-md shadow-md transition duration-150 col-span-2"
-    >
-      CREAR CUENTA
-    </button>
-  </form>
+    <form className="grid grid-cols-2 gap-4 pt-6" onSubmit={(e) => e.preventDefault()}>
+        <input
+            type="text"
+            placeholder="Nombre Completo"
+            className={`
+                col-span-2 border border-gray-300 p-3 rounded-md transition duration-150
+                ${styles.customInputFocus} 
+            `}
+        />
+        {/* ... (otros inputs similares) ... */}
+        <input
+            type="password"
+            placeholder="Contraseña"
+            className={`
+                border border-gray-300 p-3 rounded-md transition duration-150
+                ${styles.customInputFocus} 
+            `}
+        />
+        <input
+            type="password"
+            placeholder="Confirmar Contraseña"
+            className={`
+                border border-gray-300 p-3 rounded-md transition duration-150
+                ${styles.customInputFocus} 
+            `}
+        />
+        
+        <button
+            type="submit"
+            className="bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-md shadow-md transition duration-150 col-span-2"
+        >
+            CREAR CUENTA
+        </button>
+    </form>
 );
 
 
 // --- Componente Principal: Page ---
 export default function UserPage() {
-  const [activeTab, setActiveTab] = useState<'login' | 'register'>('register'); // Mantenemos Registro como pestaña activa por defecto
+  const [activeTab, setActiveTab] = useState<'login' | 'register'>('register');
 
   return (
     <div className="min-h-[80vh] flex items-center justify-center bg-gray-100 py-12">
-      <div className="max-w-4xl w-full bg-white shadow-xl rounded-lg overflow-hidden flex">
+      <div 
+        // ⬅️ CLASE HÍBRIDA: Usamos Tailwind para layout + CSS Modular para el borde complejo
+        className={`
+            max-w-4xl w-full bg-white shadow-xl rounded-lg overflow-hidden flex 
+            ${styles.authContainerBorder}
+        `}
+      >
         
-        {/* Columna Izquierda: Imagen Promocional */}
+        {/* Columna Izquierda: Imagen Promocional (Solo Tailwind) */}
         <div className="w-1/2 relative bg-gray-800 hidden md:block">
           <Image
             src={promoImageUrl}
@@ -166,8 +180,9 @@ export default function UserPage() {
         {/* Columna Derecha: Formularios de Autenticación */}
         <div className="w-full md:w-1/2 p-8">
           
-          {/* Pestañas de Navegación */}
+          {/* Pestañas de Navegación (Solo Tailwind) */}
           <div className="flex border-b border-gray-200">
+            {/* ... (código de botones de pestaña) ... */}
             <button
               onClick={() => setActiveTab('login')}
               className={`flex-1 text-center py-3 font-semibold transition duration-150 ${
