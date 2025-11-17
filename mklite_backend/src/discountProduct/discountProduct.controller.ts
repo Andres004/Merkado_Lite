@@ -1,0 +1,60 @@
+import { Controller, Get, Post, Delete, Param, Body, ParseIntPipe, HttpCode, HttpStatus } from '@nestjs/common';
+import { DiscountProductService } from './discountProduct.service';
+import { DiscountProduct } from 'src/entity/discountProduct.entity';
+
+@Controller('discount-products')
+export class DiscountProductController {
+  constructor(private readonly discountProductService: DiscountProductService) {}
+
+  @Post()
+  async create(
+    @Body('id_descuento', ParseIntPipe) idDescuento: number,
+    @Body('id_producto', ParseIntPipe) idProducto: number,
+  ): Promise<DiscountProduct> {
+    return await this.discountProductService.create(idDescuento, idProducto);
+  }
+
+  @Get()
+  async findAll(): Promise<DiscountProduct[]> {
+    return await this.discountProductService.findAll();
+  }
+
+  @Get('discount/:id')
+  async findByDiscountId(@Param('id', ParseIntPipe) idDescuento: number): Promise<DiscountProduct[]> {
+    return await this.discountProductService.findByDiscountId(idDescuento);
+  }
+
+  @Get('product/:id')
+  async findByProductId(@Param('id', ParseIntPipe) idProducto: number): Promise<DiscountProduct[]> {
+    return await this.discountProductService.findByProductId(idProducto);
+  }
+
+  @Get('discount/:idDescuento/product/:idProducto')
+  async findOne(
+    @Param('idDescuento', ParseIntPipe) idDescuento: number,
+    @Param('idProducto', ParseIntPipe) idProducto: number,
+  ): Promise<DiscountProduct> {
+    return await this.discountProductService.findOne(idDescuento, idProducto);
+  }
+
+  @Delete('discount/:idDescuento/product/:idProducto')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async remove(
+    @Param('idDescuento', ParseIntPipe) idDescuento: number,
+    @Param('idProducto', ParseIntPipe) idProducto: number,
+  ): Promise<void> {
+    await this.discountProductService.remove(idDescuento, idProducto);
+  }
+
+  @Delete('discount/:id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async removeByDiscountId(@Param('id', ParseIntPipe) idDescuento: number): Promise<void> {
+    await this.discountProductService.removeByDiscountId(idDescuento);
+  }
+
+  @Delete('product/:id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async removeByProductId(@Param('id', ParseIntPipe) idProducto: number): Promise<void> {
+    await this.discountProductService.removeByProductId(idProducto);
+  }
+}
