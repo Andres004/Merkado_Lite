@@ -4,6 +4,7 @@ import { Inventory } from './inventory.entity';
 import { StockAlert } from './stockalert.entity';
 import { Batch } from './batch.entity';
 import { ProductCategory } from './productcategory.entity';
+import { OrderItem } from './orderitem.entity';
 
 @Entity('producto') 
 export class Product {
@@ -36,4 +37,7 @@ export class Product {
 
     @OneToMany(() => ProductCategory, (productCategory) => productCategory.producto)
     productCategories: ProductCategory[];
+
+    @OneToMany(() => OrderItem, (item) => item.product)
+    orderItems: OrderItem[];
 }

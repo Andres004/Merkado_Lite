@@ -53,4 +53,18 @@ export class ShipmentService {
 
         return updatedShipment;
     }
+
+    // 3. Obtener envío por ID de Pedido (NUEVO - Para verificación)
+    async getShipmentByOrderId(id_pedido: number): Promise<Shipment> {
+        const shipment = await this.getRepository().findOneBy({ id_pedido });
+        if (!shipment) throw new NotFoundException(`No se encontró envío asociado al pedido ${id_pedido}`);
+        return shipment;
+    }
+    
+    // 4. Obtener envío por ID de Envío (NUEVO - Útil en general)
+    async getShipmentById(id_envio: number): Promise<Shipment> {
+        const shipment = await this.getRepository().findOneBy({ id_envio });
+        if (!shipment) throw new NotFoundException(`Envío ID ${id_envio} no encontrado`);
+        return shipment;
+    }
 }

@@ -18,3 +18,4 @@ export class ProductCategory {
     @JoinColumn({ name: 'id_categoria', referencedColumnName: 'id_categoria' })
     categoria: Category;
 }
+

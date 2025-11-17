@@ -1,10 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { Repository } from 'typeorm';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Repository, EntityManager } from 'typeorm';
 import { Batch } from 'src/entity/batch.entity';
 import { AppDataSource } from 'src/data-source';
 import { InventoryService } from 'src/inventory/inventory.service';
 import { StockAlertService } from 'src/stockalert/stockalert.service';
-import { StockAlert } from 'src/entity/stockalert.entity';
 
 @Injectable()
 export class BatchService {
@@ -82,7 +81,7 @@ export class BatchService {
         return { message: `Lote ${id_lote} eliminado con éxito` };
     }
 
-    // Calcula totales por estado (activo, vencido, dañado), actualiza inventario y genera alertas
+    // Calcula totales por estado, actualiza inventario y genera alertas
     private async syncInventoryStock(id_producto: number) {
         const activeSum = await this.batchRepository.sum('cantidad_disponible', { 
             id_producto: id_producto,
@@ -130,5 +129,58 @@ export class BatchService {
 
             await this.stockAlertService.createAlert(alerta);
         }
+    }
+
+    // Determina que lotes usar para una venta priorizando fecha de vencimiento (FIFO)
+    async getBatchesForSale(id_producto: number, cantidadRequerida: number): Promise<any[]> {
+        const batches = await this.batchRepository.find({
+            where: { 
+                id_producto, 
+                estado_lote: 'activo' 
+            },
+            order: { fecha_vencimiento: 'ASC' } 
+        });
+
+        const stockTotal = batches.reduce((sum, batch) => sum + batch.cantidad_disponible, 0);
+        
+        if (stockTotal < cantidadRequerida) {
+            throw new BadRequestException(`Stock insuficiente para el producto ID ${id_producto}. Requerido: ${cantidadRequerida}, Disponible: ${stockTotal}`);
+        }
+
+        const asignacion: any[] = [];
+        let faltaPorCubrir = cantidadRequerida;
+
+        for (const batch of batches) {
+            if (faltaPorCubrir <= 0) break;
+
+            const tomar = Math.min(batch.cantidad_disponible, faltaPorCubrir);
+            
+            if (tomar > 0) {
+                asignacion.push({
+                    id_producto: batch.id_producto,
+                    id_lote: batch.id_lote,
+                    cantidad_a_usar: tomar,
+                    precio_unitario: batch.costo_unitario
+                });
+                faltaPorCubrir -= tomar;
+            }
+        }
+
+        return asignacion;
+    }
+
+    // Reduce el stock de un lote especifico dentro de una transaccion
+    async reduceBatchStock(id_lote: number, cantidad: number, manager: EntityManager) {
+        const batch = await manager.findOne(Batch, { where: { id_lote } });
+        
+        if (!batch) throw new NotFoundException(`Lote ${id_lote} no encontrado durante la transacción.`);
+
+        batch.cantidad_disponible -= cantidad;
+
+        if (batch.cantidad_disponible < 0) {
+             throw new BadRequestException(`Error de concurrencia: El lote ${id_lote} no tiene suficiente stock.`);
+        }
+
+        await manager.save(batch);
     }
 }

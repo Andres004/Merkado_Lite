@@ -11,14 +11,16 @@ import { ProductCategoryModule } from './productcategory/productcategory.module'
 import { CategoryModule } from './category/category.module';
 import { InventoryModule } from './inventory/inventory.module';
 import { BatchModule } from './batch/batch.module';
-import { StockAlert } from './entity/stockalert.entity';
 import { StockAlertModule } from './stockalert/stockalert.module';
 import { SupplierModule } from './supplier/supplier.module';
+import { OrderModule } from './order/order.module';
+import { ShipmentModule } from './shipment/shipment.module';
+
 
 @Module({
   imports: [UserModule, ProductModule, CartModule, CartItemModule, RoleModule
     , UserroleModule, ProductCategoryModule, CategoryModule, InventoryModule, 
-  BatchModule, StockAlertModule, SupplierModule],
+  BatchModule, StockAlertModule, SupplierModule, OrderModule, ShipmentModule],
   controllers: [AppController],
   providers: [AppService],
 })

@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Repository } from 'typeorm';
-import { Inventory } from 'src/entity/inventory.entity'; // Ajusta la ruta
+import { Repository, EntityManager } from 'typeorm';
+import { Inventory } from 'src/entity/inventory.entity'; 
 import { AppDataSource } from 'src/data-source';
 
 @Injectable()
@@ -23,13 +23,10 @@ export class InventoryService {
         return inventory;
     }
 
-    // Crea o actualiza el inventario de un producto.
-    // Al ser relación 1:1 compartiendo ID, save funciona como Upsert.
+    // Crea o actualiza el inventario de un producto
     async setInventory(id_producto: number, data: Partial<Inventory>): Promise<Inventory> {
-        // Aseguramos que el ID del objeto sea el del producto
         const inventoryData = { ...data, id_producto };
         
-        // Guardamos (si existe actualiza, si no crea)
         await this.inventoryRepository.save(inventoryData);
         
         return this.getInventoryByProductId(id_producto);
@@ -41,5 +38,23 @@ export class InventoryService {
         inventory.stock_disponible = cantidad;
         inventory.ultima_actualizacion = new Date();
         return await this.inventoryRepository.save(inventory);
+    }
+
+    // Reduce el stock disponible global dentro de una transaccion
+    async reduceStock(id_producto: number, cantidad: number, manager: EntityManager) {
+        const inventory = await manager.findOne(Inventory, { where: { id_producto } });
+
+        if (!inventory) {
+            throw new NotFoundException(`Inventario para producto ${id_producto} no encontrado.`);
+        }
+
+        inventory.stock_disponible -= cantidad;
+        inventory.ultima_actualizacion = new Date();
+
+        if (inventory.stock_disponible < 0) {
+             throw new Error(`Inconsistencia de inventario: El stock global no puede ser negativo.`);
+        }
+
+        await manager.save(inventory);
     }
 }

@@ -4,8 +4,12 @@ import { OrderController } from "./order.controller";
 import { BatchModule } from "../batch/batch.module"; 
 import { InventoryModule } from "../inventory/inventory.module"; 
 
+
 @Module({
-    imports: [BatchModule, InventoryModule], 
+    imports: [
+        BatchModule, 
+        InventoryModule
+    ], 
     controllers: [OrderController],
     providers: [OrderService],
     exports: [OrderService] 

@@ -1,4 +1,4 @@
-import { Controller, Patch, Param, Body, ParseIntPipe } from '@nestjs/common';
+import { Controller, Patch, Get, Param, Body, ParseIntPipe } from '@nestjs/common';
 import { ShipmentService } from './shipment.service';
 
 // DTOs
@@ -30,5 +30,17 @@ export class ShipmentController {
         @Body() dto: MarkDeliveredDto
     ) {
         return this.shipmentService.markAsDelivered(id_envio, dto.calificacion_cliente);
+    }
+
+    // Obtener envío por ID de Pedido (Verificación automática)
+    @Get('/order/:id_pedido')
+    async getShipmentByOrder(@Param('id_pedido', ParseIntPipe) id_pedido: number) {
+        return this.shipmentService.getShipmentByOrderId(id_pedido);
+    }
+
+    // Obtener envío por ID de Envío
+    @Get('/:id_envio')
+    async getShipment(@Param('id_envio', ParseIntPipe) id_envio: number) {
+        return this.shipmentService.getShipmentById(id_envio);
     }
 }

@@ -1,11 +1,11 @@
 import { Injectable, BadRequestException, NotFoundException } from "@nestjs/common";
 import { AppDataSource } from "src/data-source"; 
-import { Repository, DataSource } from "typeorm";
+import { Repository } from "typeorm"; 
 import { Order } from "src/entity/order.entity";
-import { OrderItem } from "src/entity/orderitem.entity"; // <--- Import correcto
+import { OrderItem } from "src/entity/orderitem.entity";
+import { Shipment } from "src/entity/shipment.entity"; // <--- 1. NUEVO IMPORT
 import { CreateOrderDto } from "./order.controller"; 
 
-// Importaciones de Módulos externos
 import { BatchService } from '../batch/batch.service'; 
 import { InventoryService } from '../inventory/inventory.service'; 
 
@@ -16,7 +16,6 @@ export class OrderService {
     constructor(
         private batchService: BatchService,
         private inventoryService: InventoryService,
-        private dataSource: DataSource,
     ) {}
 
     private getOrderRepository(): Repository<Order> {
@@ -26,12 +25,12 @@ export class OrderService {
     }
 
     async createOrder(dto: CreateOrderDto): Promise<Order> {
-        const queryRunner = this.dataSource.createQueryRunner();
+        const queryRunner = AppDataSource.createQueryRunner(); 
         await queryRunner.connect();
         await queryRunner.startTransaction();
 
         try {
-            // 1. Lógica de Lotes (Batch)
+            // 1. Lógica de Lotes (FIFO)
             const itemsConLotePromises = dto.items.map(async (itemDto) => {
                 return await this.batchService.getBatchesForSale(itemDto.id_producto, itemDto.cantidad);
             });
@@ -57,8 +56,7 @@ export class OrderService {
 
             const savedOrder = await queryRunner.manager.save(Order, newOrder);
 
-            // 4. Guardar OrderItems (Detalles)
-            // Mapeamos los items a la entidad OrderItem
+            // 4. Guardar OrderItems
             const itemsToSave = itemsFlattened.map(item => {
                 const orderItem = new OrderItem();
                 orderItem.id_pedido = savedOrder.id_pedido;
@@ -76,6 +74,15 @@ export class OrderService {
                 await this.inventoryService.reduceStock(item.id_producto, item.cantidad_a_usar, queryRunner.manager);
                 await this.batchService.reduceBatchStock(item.id_lote, item.cantidad_a_usar, queryRunner.manager);
             }
+
+            // 6. CREAR AUTOMÁTICAMENTE EL ENVÍO (NUEVO PASO)
+            // Esto cumple el flujo: Pedido -> Se genera logística pendiente
+            const newShipment = new Shipment();
+            newShipment.id_pedido = savedOrder.id_pedido;
+            newShipment.estado_envio = 'Pendiente'; // Estado inicial para que el repartidor lo tome luego
+            // newShipment.sector = ... (Aquí podrías implementar lógica de sectores si tuvieras el dato)
+            
+            await queryRunner.manager.save(Shipment, newShipment);
 
             await queryRunner.commitTransaction();
             return savedOrder;
