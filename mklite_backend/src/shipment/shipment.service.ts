@@ -65,6 +65,6 @@ export class ShipmentService {
     async getShipmentById(id_envio: number): Promise<Shipment> {
         const shipment = await this.getRepository().findOneBy({ id_envio });
         if (!shipment) throw new NotFoundException(`Envío ID ${id_envio} no encontrado`);
-        return shipment;
+        return shipment; //shipment
     }
 }
