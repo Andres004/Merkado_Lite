@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Delete, Param, Body, ParseIntPipe, HttpCode, HttpStatus } from '@nestjs/common';
-import { DiscountProductService } from './discountProduct.service';
-import { DiscountProduct } from 'src/entity/discountProduct.entity';
+import { DiscountProductService } from './discountproduct.service';
+import { DiscountProduct } from 'src/entity/discountproduct.entity';
 
 @Controller('discount-products')
 export class DiscountProductController {
