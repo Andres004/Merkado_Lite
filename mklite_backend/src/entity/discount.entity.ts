@@ -1,25 +1,30 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany, Decimal128} from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import { DiscountProduct } from './discountproduct.entity';
 
 @Entity('descuento')
-export class  Discount{
+export class Discount {
     @PrimaryGeneratedColumn()
     id_descuento: number;
 
-    @Column()
-    fecha_inicio: Date
+    @Column({ type: 'datetime' }) // Ajustado a datetime para manejar horas si es necesario
+    fecha_inicio: Date;
 
-    @Column()
-    fecha_final: Date
+    @Column({ type: 'datetime' })
+    fecha_final: Date;
 
-    @Column()
-    codigo_cupon: string
+    @Column({ length: 50 })
+    codigo_cupon: string;
 
-    @Column({type: 'decimal', precision: 10, scale: 2 })
-    porcentaje_descuento: number
+    @Column({ type: 'decimal', precision: 5, scale: 2 }) // Ajustado precision típica para %
+    porcentaje_descuento: number;
 
-    @Column({type: 'decimal', precision: 10, scale: 2 })
-    monto_fijo: number
+    @Column({ type: 'decimal', precision: 10, scale: 2 })
+    monto_fijo: number;
 
-    @Column()
-    estado_de_oferta: boolean
+    @Column({ default: true }) // Por defecto activo
+    estado_de_oferta: boolean;
+
+    // Relación inversa necesaria
+    @OneToMany(() => DiscountProduct, (dp) => dp.discount)
+    discountProducts: DiscountProduct[];
 }
