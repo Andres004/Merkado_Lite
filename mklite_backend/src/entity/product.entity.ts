@@ -1,6 +1,9 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
-import { ProductCategory } from './productcategory.entity';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany, OneToOne } from 'typeorm';
 import { CartItem } from './cartitem.entity';
+import { Inventory } from './inventory.entity'; 
+import { StockAlert } from './stockalert.entity';
+import { Batch } from './batch.entity';
+import { ProductCategory } from './productcategory.entity';
 
 @Entity('producto') 
 export class Product {
@@ -22,6 +25,15 @@ export class Product {
     @OneToMany(() => CartItem, (cartItem) => cartItem.product)
     cartItems: CartItem[];
 
-    @OneToMany(() => ProductCategory, (pc) => pc.producto)
+    @OneToOne(() => Inventory, (inventory) => inventory.product)
+    inventory: Inventory;
+
+    @OneToMany(() => StockAlert, (stockAlert) => stockAlert.product)
+    stockAlerts: StockAlert[];
+
+    @OneToMany(() => Batch, (batch) => batch.product)
+    batches: Batch[];
+
+    @OneToMany(() => ProductCategory, (productCategory) => productCategory.producto)
     productCategories: ProductCategory[];
 }

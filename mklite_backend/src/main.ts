@@ -10,8 +10,9 @@ async function bootstrap() {
     console.error('Error inicializando DataSource', error);
     process.exit(1); // aborta la app si no puede conectarse
   }
-
+  
   const app = await NestFactory.create(AppModule, { cors: true });
+  app.enableShutdownHooks();
   await app.listen(process.env.PORT ?? 3005);
   console.log(`Servidor corriendo en puerto ${process.env.PORT ?? 3005}`);
 }
