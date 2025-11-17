@@ -5,7 +5,7 @@ import { StockAlert } from './stockalert.entity';
 import { Batch } from './batch.entity';
 import { ProductCategory } from './productcategory.entity';
 import { OrderItem } from './orderitem.entity';
-import { RefundItem } from './refundItem.entity';
+import { RefundItem } from './refunditem.entity';
 
 @Entity('producto') 
 export class Product {
@@ -43,6 +43,6 @@ export class Product {
     orderItems: OrderItem[];
 
     @OneToMany(() => RefundItem, (refundItem) => refundItem.product)
-    refundItems: RefundItem[];
+    refundItems: RefundItem[]; //merge
 
 }
