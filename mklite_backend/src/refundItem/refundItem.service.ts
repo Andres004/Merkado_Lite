@@ -1,9 +1,10 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { RefundItem } from '../entity/refundItem.entity';
+import { RefundItem } from 'src/entity/refundItem.entity';
 import { Refund } from 'src/entity/refund.entity';
 import { Product } from 'src/entity/product.entity';
+import { InventoryService } from '../inventory/inventory.service';
 
 @Injectable()
 export class RefundItemService {
@@ -14,52 +15,49 @@ export class RefundItemService {
     private refundRepository: Repository<Refund>,
     @InjectRepository(Product)
     private productRepository: Repository<Product>,
+    private inventoryService: InventoryService,
   ) {}
 
-  // Crear un nuevo item de devolución
   async create(refundItemData: Partial<RefundItem>): Promise<RefundItem> {
-    // Validar que la devolución existe
+    // 1. Validar devolución
     const refund = await this.refundRepository.findOne({
       where: { id_devolucion: refundItemData.id_devolucion }
     });
+    if (!refund) throw new NotFoundException(`Devolución ${refundItemData.id_devolucion} no encontrada`);
 
-    if (!refund) {
-      throw new NotFoundException(`Devolución con ID ${refundItemData.id_devolucion} no encontrada`);
-    }
-
-    // Validar que el producto existe
+    // 2. Validar producto
     const product = await this.productRepository.findOne({
       where: { id_producto: refundItemData.id_producto }
     });
+    if (!product) throw new NotFoundException(`Producto ${refundItemData.id_producto} no encontrado`);
 
-    if (!product) {
-      throw new NotFoundException(`Producto con ID ${refundItemData.id_producto} no encontrado`);
-    }
-
-    // Validar que no existe ya este item para esta devolución
+    // 3. Validar duplicados
     const existingItem = await this.refundItemRepository.findOne({
       where: {
         id_devolucion: refundItemData.id_devolucion,
         id_producto: refundItemData.id_producto
       }
     });
+    if (existingItem) throw new BadRequestException('Producto ya registrado en la devolución');
 
-    if (existingItem) {
-      throw new BadRequestException('Este producto ya está registrado en la devolución');
-    }
-
+    // 4. Guardar item
     const refundItem = this.refundItemRepository.create(refundItemData);
-    return await this.refundItemRepository.save(refundItem);
+    const savedItem = await this.refundItemRepository.save(refundItem);
+
+    // 5. Actualizar inventario (Mover a stock dañado según CU-21)
+    const inventory = await this.inventoryService.getInventoryByProductId(savedItem.id_producto);
+    inventory.stock_danado = (inventory.stock_danado || 0) + savedItem.cantidad;
+    await this.inventoryService.setInventory(savedItem.id_producto, inventory);
+
+    return savedItem;
   }
 
-  // Obtener todos los items de devolución
   async findAll(): Promise<RefundItem[]> {
     return await this.refundItemRepository.find({
       relations: ['refund', 'product']
     });
   }
 
-  // Obtener item de devolución por ID de devolución
   async findByRefundId(idDevolucion: number): Promise<RefundItem[]> {
     return await this.refundItemRepository.find({
       where: { id_devolucion: idDevolucion },
@@ -67,7 +65,6 @@ export class RefundItemService {
     });
   }
 
-  // Obtener item de devolución por ID de producto
   async findByProductId(idProducto: number): Promise<RefundItem[]> {
     return await this.refundItemRepository.find({
       where: { id_producto: idProducto },
@@ -75,7 +72,6 @@ export class RefundItemService {
     });
   }
 
-  // Obtener un item de devolución por ID de devolución y ID de producto
   async findOne(idDevolucion: number, idProducto: number): Promise<RefundItem> {
     const refundItem = await this.refundItemRepository.findOne({
       where: { 
@@ -85,51 +81,27 @@ export class RefundItemService {
       relations: ['refund', 'product']
     });
 
-    if (!refundItem) {
-      throw new NotFoundException(
-        `Item de devolución no encontrado para devolución ${idDevolucion} y producto ${idProducto}`
-      );
-    }
-
+    if (!refundItem) throw new NotFoundException('Item de devolución no encontrado');
     return refundItem;
   }
 
-  // Actualizar items de devolución
-  async update(
-    idDevolucion: number, 
-    idProducto: number, 
-    updateData: Partial<RefundItem>
-  ): Promise<RefundItem> {
+  async update(idDevolucion: number, idProducto: number, updateData: Partial<RefundItem>): Promise<RefundItem> {
     const refundItem = await this.findOne(idDevolucion, idProducto);
-    
-    const updatedRefundItem = await this.refundItemRepository.save({
-      ...refundItem,
-      ...updateData,
-    });
-
-    return updatedRefundItem;
+    return await this.refundItemRepository.save({ ...refundItem, ...updateData });
   }
 
-  // Eliminar un item de devolución por ID de devolución y ID de producto
   async remove(idDevolucion: number, idProducto: number): Promise<void> {
     const result = await this.refundItemRepository.delete({
       id_devolucion: idDevolucion,
       id_producto: idProducto
     });
-
-    if (result.affected === 0) {
-      throw new NotFoundException(
-        `Item de devolución no encontrado para devolución ${idDevolucion} y producto ${idProducto}`
-      );
-    }
+    if (result.affected === 0) throw new NotFoundException('Item de devolución no encontrado');
   }
 
-  // Eliminar items de devolución por ID de devolución
   async removeByRefundId(idDevolucion: number): Promise<void> {
     await this.refundItemRepository.delete({ id_devolucion: idDevolucion });
   }
 
-  // Obtener devolución por ID
   async getTotalByRefundId(idDevolucion: number): Promise<number> {
     const result = await this.refundItemRepository
       .createQueryBuilder('refundItem')
@@ -140,12 +112,10 @@ export class RefundItemService {
     return parseFloat(result.total) || 0;
   }
 
-  // Obtener resumen de items de devolución por ID de devolución
   async getRefundItemsSummary(idDevolucion: number): Promise<any> {
     const items = await this.findByRefundId(idDevolucion);
-    
     const total = items.reduce((sum, item) => {
-      return sum + (item.cantidad * parseFloat(item.precio_unitario as any));
+      return sum + (item.cantidad * Number(item.precio_unitario));
     }, 0);
 
     return {

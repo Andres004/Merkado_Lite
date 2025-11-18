@@ -1,14 +1,18 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { DiscountProduct } from 'src/entity/discountProduct.entity';
+import { AppDataSource } from 'src/data-source';
 
 @Injectable()
 export class DiscountProductService {
-  constructor(
-    @InjectRepository(DiscountProduct)
-    private discountProductRepository: Repository<DiscountProduct>,
-  ) {}
+  private discountProductRepository: Repository<DiscountProduct>;
+
+  constructor() {
+    if (!AppDataSource.isInitialized) {
+        throw new Error('DataSource no está inicializado');
+    }
+    this.discountProductRepository = AppDataSource.getRepository(DiscountProduct);
+  }
 
   async create(idDescuento: number, idProducto: number): Promise<DiscountProduct> {
     // Verificar si ya existe la relación
@@ -48,25 +52,7 @@ export class DiscountProductService {
     });
   }
 
-  async findOne(idDescuento: number, idProducto: number): Promise<DiscountProduct> {
-    const discountProduct = await this.discountProductRepository.findOne({
-      where: { 
-        id_descuento: idDescuento,
-        id_producto: idProducto 
-      },
-      relations: ['discount', 'product']
-    });
-
-    if (!discountProduct) {
-      throw new NotFoundException(
-        `No se encontró la relación entre el descuento ${idDescuento} y el producto ${idProducto}`
-      );
-    }
-
-    return discountProduct;
-  }
-
-  async remove(idDescuento: number, idProducto: number): Promise<void> {
+  async remove(idDescuento: number, idProducto: number): Promise<{ message: string }> {
     const result = await this.discountProductRepository.delete({
       id_descuento: idDescuento,
       id_producto: idProducto
@@ -77,13 +63,6 @@ export class DiscountProductService {
         `No se encontró la relación entre el descuento ${idDescuento} y el producto ${idProducto}`
       );
     }
-  }
-
-  async removeByDiscountId(idDescuento: number): Promise<void> {
-    await this.discountProductRepository.delete({ id_descuento: idDescuento });
-  }
-
-  async removeByProductId(idProducto: number): Promise<void> {
-    await this.discountProductRepository.delete({ id_producto: idProducto });
+    return { message: 'Producto removido del descuento correctamente' };
   }
 }

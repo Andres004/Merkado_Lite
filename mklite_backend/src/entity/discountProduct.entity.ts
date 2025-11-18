@@ -10,11 +10,11 @@ export class DiscountProduct {
     @PrimaryColumn({ name: 'id_producto' })
     id_producto: number;
 
-    @ManyToOne(() => Discount, (discount) => discount.id_descuento, { onDelete: 'CASCADE' })
-    @JoinColumn({ name: 'id_descuento' })
+    @ManyToOne(() => Discount, (discount) => discount.discountProducts, { onDelete: 'CASCADE' })
+    @JoinColumn({ name: 'id_descuento', referencedColumnName: 'id_descuento' })
     discount: Discount;
 
-    @ManyToOne(() => Product, (product) => product.id_producto, { onDelete: 'CASCADE' })
-    @JoinColumn({ name: 'id_producto' })
+    @ManyToOne(() => Product, (product) => product.discountProducts, { onDelete: 'CASCADE' })
+    @JoinColumn({ name: 'id_producto', referencedColumnName: 'id_producto' })
     product: Product;
 }

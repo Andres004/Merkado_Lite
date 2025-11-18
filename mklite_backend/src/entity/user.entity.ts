@@ -1,5 +1,6 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany, ManyToMany, JoinTable } from 'typeorm';
 import { Cart } from './cart.entity';
+import { UserRole } from './userrole.entity';
 
 @Entity('usuario')
 export class User {
@@ -27,6 +28,9 @@ export class User {
     @Column({ length: 255 })
     direccion: string; // varchar(255)
 
-     @OneToMany(() => Cart, (cart) => cart.user)
-  carts: Cart[];
+    @OneToMany(() => UserRole, (userrole) => userrole.usuario)
+    userRoles: UserRole[];
+
+    @OneToMany(() => Cart, (cart) => cart.user)
+    carts: Cart[];
 }

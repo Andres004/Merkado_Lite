@@ -5,41 +5,62 @@ import { AppDataSource } from 'src/data-source';
 
 @Injectable()
 export class ProductService {
-  private productRepository: Repository<Product>;
+    private productRepository: Repository<Product>;
 
-  constructor() {
-    this.productRepository = AppDataSource.getRepository(Product);
-  }
-
-  async createProduct(product: Product): Promise<Product> {
-    return await this.productRepository.save(product);
-  }
-
-  async getAllProducts(): Promise<Product[]> {
-    return await this.productRepository.find();
-  }
-
-  async getProductById(id_producto: number): Promise<Product> {
-    const product = await this.productRepository.findOneBy({ id_producto });
-    if (!product) {
-      throw new NotFoundException(`Producto con ID ${id_producto} no encontrado`);
+    constructor() {
+        if (!AppDataSource.isInitialized) {
+            throw new Error('DataSource no está inicializado');
+        }
+        this.productRepository = AppDataSource.getRepository(Product);
     }
-    return product;
-  }
 
-  async updateProduct(id_producto: number, updateData: Partial<Product>): Promise<Product> {
-    const updateResult = await this.productRepository.update(id_producto, updateData);
-    if (updateResult.affected === 0) {
-      throw new NotFoundException(`Producto con ID ${id_producto} no encontrado para actualizar`);
+    async createProduct(product: Product): Promise<Product> {
+        return await this.productRepository.save(product);
     }
-    return this.getProductById(id_producto);
-  }
 
-  async deleteProduct(id_producto: number): Promise<{ message: string }> {
-    const deleteResult = await this.productRepository.delete(id_producto);
-    if (deleteResult.affected === 0) {
-      throw new NotFoundException(`Producto con ID ${id_producto} no encontrado para eliminar`);
+    //MODIFICADO: Ahora carga las categorías asignadas
+    
+    async getAllProducts(): Promise<Product[]> {
+        return await this.productRepository.find({
+            relations: [
+                'productCategories', 
+                'productCategories.categoria'
+            ],
+        });
     }
-    return { message: `Producto con ID ${id_producto} eliminado con éxito` };
-  }
+
+    //MODIFICADO: Ahora carga las categorías asignadas
+    
+    async getProductById(id_producto: number): Promise<Product> {
+        const product = await this.productRepository.findOne({
+            where: { id_producto },
+            relations: [
+                'productCategories',
+                'productCategories.categoria'
+            ],
+        });
+        
+        if (!product) {
+            throw new NotFoundException(`Producto con ID ${id_producto} no encontrado`);
+        }
+        return product;
+    }
+
+    
+    //MODIFICADO: Ahora devuelve el producto actualizado con categorias
+    async updateProduct(id_producto: number, updateData: Partial<Product>): Promise<Product> {
+        const updateResult = await this.productRepository.update(id_producto, updateData);
+        if (updateResult.affected === 0) {
+            throw new NotFoundException(`Producto con ID ${id_producto} no encontrado para actualizar`);
+        }
+        return this.getProductById(id_producto); 
+    }
+
+    async deleteProduct(id_producto: number): Promise<{ message: string }> {
+        const deleteResult = await this.productRepository.delete(id_producto);
+        if (deleteResult.affected === 0) {
+            throw new NotFoundException(`Producto con ID ${id_producto} no encontrado para eliminar`);
+        }
+        return { message: `Producto con ID ${id_producto} eliminado con éxito` };
+    }
 }

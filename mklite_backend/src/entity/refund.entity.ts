@@ -1,38 +1,32 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany, ManyToOne, JoinColumn } from 'typeorm';
 import { RefundItem } from './refundItem.entity';
+import { Order } from './order.entity';
+import { User } from './user.entity';
 
 @Entity('reembolso')
 export class Refund {
     @PrimaryGeneratedColumn()
     id_devolucion: number;
 
-    // TODO: Agregar cuando la entidad Pedido esté disponible
-    // @Column({ name: 'id_pedido' })
-    // id_pedido: number;
-
-    @Column({ name: 'id_vendedor' })
-    id_vendedor: number; // Este es el id_usuario que debe tener rol de vendedor
-
-    @Column({ name: 'fecha_devolucion' })
-    fecha_devolucion: Date;
+    @Column({ name: 'id_usuario_vendedor' }) 
+    id_usuario_vendedor: number;
+    
+   @Column({ type: 'datetime', default: () => 'CURRENT_TIMESTAMP' })
+    fecha: Date;
 
     @Column({ name: 'motivo' })
     motivo: string;
 
-    @Column({ type: 'decimal', precision: 10, scale: 2, name: 'monto' })
-    monto: number;
+    @Column({ type: 'decimal', precision: 10, scale: 2, name: 'monto_total' }) 
+    monto_total: number;
 
-    // TODO: Agregar cuando la entidad UsuarioRol
-    /*
-    // Relación con UsuarioRol para validar que el id_vendedor tiene rol de vendedor
-    @ManyToOne(() => UsuarioRol, (usuarioRol) => usuarioRol.reembolsos)
-    @JoinColumn({ name: 'id_vendedor', referencedColumnName: 'id_usuario' })
-    usuarioRol: UsuarioRol;
+    @ManyToOne(() => User)
+    @JoinColumn({ name: 'id_usuario_vendedor', referencedColumnName: 'id_usuario' })
+    vendedor: User;
 
-    @ManyToOne(() => Pedido, (pedido) => pedido.reembolsos)
+    @ManyToOne(() => Order)
     @JoinColumn({ name: 'id_pedido', referencedColumnName: 'id_pedido' })
-    pedido: Pedido;
-    */
+    pedido: Order;
 
     @OneToMany(() => RefundItem, (refundItem) => refundItem.refund)
     refundItems: RefundItem[];

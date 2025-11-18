@@ -1,6 +1,13 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany, OneToOne } from 'typeorm';
 import { CartItem } from './cartitem.entity';
+import { Inventory } from './inventory.entity'; 
+import { StockAlert } from './stockalert.entity';
+import { Batch } from './batch.entity';
+import { ProductCategory } from './productcategory.entity';
+import { OrderItem } from './orderitem.entity';
 import { RefundItem } from './refundItem.entity';
+import { DiscountProduct } from './discountProduct.entity';
 
 @Entity('producto') 
 export class Product {
@@ -22,6 +29,24 @@ export class Product {
     @OneToMany(() => CartItem, (cartItem) => cartItem.product)
     cartItems: CartItem[];
 
+    @OneToOne(() => Inventory, (inventory) => inventory.product)
+    inventory: Inventory;
+
+    @OneToMany(() => StockAlert, (stockAlert) => stockAlert.product)
+    stockAlerts: StockAlert[];
+
+    @OneToMany(() => Batch, (batch) => batch.product)
+    batches: Batch[];
+
+    @OneToMany(() => ProductCategory, (productCategory) => productCategory.producto)
+    productCategories: ProductCategory[];
+
+    @OneToMany(() => OrderItem, (item) => item.product)
+    orderItems: OrderItem[];
+
     @OneToMany(() => RefundItem, (refundItem) => refundItem.product)
     refundItems: RefundItem[];
+    
+    @OneToMany(() => DiscountProduct, (dp) => dp.product)
+    discountProducts: DiscountProduct[];
 }

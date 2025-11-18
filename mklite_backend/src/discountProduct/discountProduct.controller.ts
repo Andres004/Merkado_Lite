@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Delete, Param, Body, ParseIntPipe, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Param, Body, ParseIntPipe } from '@nestjs/common';
 import { DiscountProductService } from './discountProduct.service';
 import { DiscountProduct } from 'src/entity/discountProduct.entity';
 
@@ -29,32 +29,11 @@ export class DiscountProductController {
     return await this.discountProductService.findByProductId(idProducto);
   }
 
-  @Get('discount/:idDescuento/product/:idProducto')
-  async findOne(
-    @Param('idDescuento', ParseIntPipe) idDescuento: number,
-    @Param('idProducto', ParseIntPipe) idProducto: number,
-  ): Promise<DiscountProduct> {
-    return await this.discountProductService.findOne(idDescuento, idProducto);
-  }
-
   @Delete('discount/:idDescuento/product/:idProducto')
-  @HttpCode(HttpStatus.NO_CONTENT)
   async remove(
     @Param('idDescuento', ParseIntPipe) idDescuento: number,
     @Param('idProducto', ParseIntPipe) idProducto: number,
-  ): Promise<void> {
-    await this.discountProductService.remove(idDescuento, idProducto);
-  }
-
-  @Delete('discount/:id')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  async removeByDiscountId(@Param('id', ParseIntPipe) idDescuento: number): Promise<void> {
-    await this.discountProductService.removeByDiscountId(idDescuento);
-  }
-
-  @Delete('product/:id')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  async removeByProductId(@Param('id', ParseIntPipe) idProducto: number): Promise<void> {
-    await this.discountProductService.removeByProductId(idProducto);
+  ) {
+    return await this.discountProductService.remove(idDescuento, idProducto);
   }
 }

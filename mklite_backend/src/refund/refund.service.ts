@@ -1,56 +1,53 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between } from 'typeorm';
+import { Repository, Between, DataSource } from 'typeorm';
 import { Refund } from 'src/entity/refund.entity';
+import { Order } from 'src/entity/order.entity';
+import { InventoryService } from '../inventory/inventory.service'; // Inyectar para uso futuro
 
 @Injectable()
 export class RefundService {
   constructor(
     @InjectRepository(Refund)
     private refundRepository: Repository<Refund>,
-    /*@InjectRepository(Pedido)
-    private pedidoRepository: Repository<Pedido>,*/
+    @InjectRepository(Order)
+    private orderRepository: Repository<Order>,
+    private inventoryService: InventoryService,
+    private dataSource: DataSource,
   ) {}
-
-
-  // TODO: Inyectar cuando UsuarioRolService esté disponible
-  // @Inject(forwardRef(() => UsuarioRolService))
-  // private usuarioRolService: UsuarioRolService;
-
 
   // Crear un nuevo reembolso
   async create(refundData: Partial<Refund>): Promise<Refund> {
-    // Validaciones básicas
-    if (!refundData.id_vendedor) {
-      throw new BadRequestException('El ID del vendedor es requerido');
+    // 1. Validaciones
+    if (!refundData.id_usuario_vendedor) throw new BadRequestException('ID Vendedor requerido');
+    // Nota: Asumimos que refundData trae la propiedad 'pedido' o un id relacionado.
+    // Si tu DTO envía 'id_pedido', asegúrate de mapearlo correctamente.
+    const idPedido = refundData['id_pedido'] || (refundData.pedido ? refundData.pedido.id_pedido : null);
+    
+    if (!idPedido) throw new BadRequestException('ID Pedido requerido');
+
+    const pedido = await this.orderRepository.findOneBy({ id_pedido: idPedido });
+    if (!pedido) throw new NotFoundException(`Pedido ${idPedido} no encontrado`);
+
+    if (!refundData.monto_total || refundData.monto_total <= 0) {
+      throw new BadRequestException('El monto total debe ser mayor a 0');
     }
 
-    /**if (!refundData.id_pedido) {
-      throw new BadRequestException('El ID del pedido es requerido');
-    }*/
-
-    if (!refundData.monto || refundData.monto <= 0) {
-      throw new BadRequestException('El monto debe ser mayor a 0');
-    }
-
-    // TODO: Implementar cuando UsuarioRolService esté disponible
-    /*
-    // Validar que el usuario tiene rol de vendedor
-    const tieneRolVendedor = await this.usuarioRolService.validarRolVendedor(refundData.id_vendedor);
-    if (!tieneRolVendedor) {
-      throw new ForbiddenException('El usuario no tiene permisos de vendedor para crear reembolsos');
-    }
-    */
-
-    const refund = this.refundRepository.create(refundData);
+    // 2. Crear Devolución
+    const refund = this.refundRepository.create({
+        ...refundData,
+        pedido: pedido, // Asignar la relación
+        fecha: new Date() // Asignar fecha actual
+    });
+    
     return await this.refundRepository.save(refund);
   }
 
   // Obtener todos los reembolsos
   async findAll(): Promise<Refund[]> {
     return await this.refundRepository.find({
-      //relations: ['pedido'],
-      order: { fecha_devolucion: 'DESC' }
+      relations: ['pedido', 'vendedor'],
+      order: { fecha: 'DESC' }
     });
   }
 
@@ -58,8 +55,7 @@ export class RefundService {
   async findOne(id: number): Promise<Refund> {
     const refund = await this.refundRepository.findOne({
       where: { id_devolucion: id },
-      //relations:['pedido']
-      
+      relations: ['pedido', 'vendedor', 'refundItems'] 
     });
 
     if (!refund) {
@@ -69,55 +65,28 @@ export class RefundService {
     return refund;
   }
 
-  // Obtener un reembolso por ID de vendedor
+  // Obtener reembolsos por ID de vendedor
   async findByVendedorId(idVendedor: number): Promise<Refund[]> {
-    // TODO: Validar rol de vendedor cuando UsuarioRolService esté disponible
-    /*
-    const tieneRolVendedor = await this.usuarioRolService.validarRolVendedor(idVendedor);
-    if (!tieneRolVendedor) {
-      throw new ForbiddenException('El usuario no tiene permisos de vendedor');
-    }
-    */
-
     return await this.refundRepository.find({
-      where: { id_vendedor: idVendedor },
-      order: { fecha_devolucion: 'DESC' }
+      where: { id_usuario_vendedor: idVendedor },
+      relations: ['pedido'],
+      order: { fecha: 'DESC' }
     });
   }
 
   // Obtener reembolsos por ID de pedido
-  /*async findByPedidoId(idPedido: number): Promise<Refund[]> {
+  async findByPedidoId(idPedido: number): Promise<Refund[]> {
     return await this.refundRepository.find({
-      where: { id_pedido: idPedido },
+      where: { pedido: { id_pedido: idPedido } }, // Buscar por relación
       relations: ['pedido'],
-      order: { fecha_devolucion: 'DESC' }
+      order: { fecha: 'DESC' }
     });
-  }*/
+  }
 
+  // Actualizar reembolso
   async update(id: number, updateData: Partial<Refund>): Promise<Refund> {
     const refund = await this.findOne(id);
     
-    // Validar pedido si se está actualizando
-    /*if (updateData.id_pedido && updateData.id_pedido !== refund.id_pedido) {
-      const pedido = await this.pedidoRepository.findOne({
-        where: { id_pedido: updateData.id_pedido }
-      });
-
-      if (!pedido) {
-        throw new NotFoundException(`Pedido con ID ${updateData.id_pedido} no encontrado`);
-      }
-    }*/
-
-    // TODO: Validar rol de vendedor cuando UsuarioRolService esté disponible
-    /*
-    if (updateData.id_vendedor && updateData.id_vendedor !== refund.id_vendedor) {
-      const tieneRolVendedor = await this.usuarioRolService.validarRolVendedor(updateData.id_vendedor);
-      if (!tieneRolVendedor) {
-        throw new ForbiddenException('El nuevo usuario no tiene permisos de vendedor');
-      }
-    }
-    */
-
     const updatedRefund = await this.refundRepository.save({
       ...refund,
       ...updateData,
@@ -135,45 +104,25 @@ export class RefundService {
     }
   }
 
-  //Devuelve los reembolsos en un rango de fechas
+  // Devuelve los reembolsos en un rango de fechas
   async getRefundsByDateRange(fechaInicio: Date, fechaFin: Date): Promise<Refund[]> {
     return await this.refundRepository.find({
       where: {
-        fecha_devolucion: Between(fechaInicio, fechaFin)
+        fecha: Between(fechaInicio, fechaFin)
       },
-      //relations: ['pedido'],
-      order: { fecha_devolucion: 'DESC' }
+      relations: ['pedido'],
+      order: { fecha: 'DESC' }
     });
   }
 
   // Obtener el total de reembolsos por ID de vendedor
   async getTotalRefundsByVendedor(idVendedor: number): Promise<number> {
-    // TODO: Validar rol de vendedor cuando UsuarioRolService esté disponible
-    /*
-    const tieneRolVendedor = await this.usuarioRolService.validarRolVendedor(idVendedor);
-    if (!tieneRolVendedor) {
-      throw new ForbiddenException('El usuario no tiene permisos de vendedor');
-    }
-    */
-
     const result = await this.refundRepository
       .createQueryBuilder('refund')
-      .select('SUM(refund.monto)', 'total')
-      .where('refund.id_vendedor = :idVendedor', { idVendedor })
+      .select('SUM(refund.monto_total)', 'total')
+      .where('refund.id_usuario_vendedor = :idVendedor', { idVendedor })
       .getRawOne();
 
     return parseFloat(result.total) || 0;
   }
-
-  // Obtener reembolso por ID de pedido e ID de vendedor
-  /*async getRefundsByPedidoAndVendedor(idPedido: number, idVendedor: number): Promise<Refund[]> {
-    return await this.refundRepository.find({
-      where: {
-        id_pedido: idPedido,
-        id_vendedor: idVendedor
-      },
-      relations: ['pedido'],
-      order: { fecha_devolucion: 'DESC' }
-    });
-  }*/
 }
