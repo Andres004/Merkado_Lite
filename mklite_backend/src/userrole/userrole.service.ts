@@ -4,6 +4,7 @@ import { UserRole } from "src/entity/userrole.entity"; // Ajuste la ruta
 import { Repository } from "typeorm";
 
 @Injectable()
+
 export class UserRoleService {
     private userroleRepository: Repository<UserRole>;
 
