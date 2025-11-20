@@ -1,4 +1,3 @@
-
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany, OneToOne } from 'typeorm';
 import { CartItem } from './cartitem.entity';
 import { Inventory } from './inventory.entity'; 
