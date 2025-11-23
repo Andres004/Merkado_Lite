@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany, ManyToMany, JoinTable } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
 import { Cart } from './cart.entity';
 import { UserRole } from './userrole.entity';
 
@@ -14,19 +14,19 @@ export class User {
     apellido: string;
 
     @Column({ length: 20 })
-    ci: string; // varchar(20)
+    ci: string; 
 
     @Column({ length: 150, unique: true })
     email: string;
     
-    @Column({ length: 255 })
+    @Column({ length: 255, select: false }) 
     password: string;
 
-    @Column({ length: 30 })
-    telefono: string; // varchar(30)
+    @Column({ length: 30, nullable: true }) 
+    telefono: string;
 
-    @Column({ length: 255 })
-    direccion: string; // varchar(255)
+    @Column({ length: 255, nullable: true })
+    direccion: string;
 
     @OneToMany(() => UserRole, (userrole) => userrole.usuario)
     userRoles: UserRole[];

@@ -21,7 +21,7 @@ export class DiscountController {
     return await this.discountService.getDiscountById(id_descuento);
   }
 
-  @Get('/code/:code') // Nuevo endpoint para validar cupones en checkout
+  @Get('/code/:code')
   async getDiscountByCode(@Param('code') code: string) {
     return await this.discountService.getDiscountByCode(code);
   }

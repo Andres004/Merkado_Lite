@@ -2,16 +2,18 @@ import { Controller, Get, Post, Delete, Param, Body, ParseIntPipe } from '@nestj
 import { DiscountProductService } from './discountproduct.service';
 import { DiscountProduct } from 'src/entity/discountproduct.entity';
 
+class CreateDiscountProductDto {
+    id_descuento: number;
+    id_producto: number;
+}
+
 @Controller('discount-products')
 export class DiscountProductController {
   constructor(private readonly discountProductService: DiscountProductService) {}
 
   @Post()
-  async create(
-    @Body('id_descuento', ParseIntPipe) idDescuento: number,
-    @Body('id_producto', ParseIntPipe) idProducto: number,
-  ): Promise<DiscountProduct> {
-    return await this.discountProductService.create(idDescuento, idProducto);
+  async create(@Body() dto: CreateDiscountProductDto): Promise<DiscountProduct> {
+    return await this.discountProductService.create(dto.id_descuento, dto.id_producto);
   }
 
   @Get()

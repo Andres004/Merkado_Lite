@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Param, Body } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Body, Query } from '@nestjs/common';
 import { UserService } from './user.service';
 import { User } from 'src/entity/user.entity';
 
@@ -11,9 +11,14 @@ export class UserController {
     return this.userService.createUser(user);
   }
 
-  @Get() //get all
-  async getAllUsers() {
-    return this.userService.getAllUsers();
+  // Obtener usuarios con paginacion
+  @Get() 
+  async getAllUsers(
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10
+  ) {
+    // Aseguramos que sean numeros
+    return this.userService.getAllUsers(Number(page), Number(limit));
   }
 
   @Get('/:id_usuario')

@@ -15,12 +15,18 @@ import { StockAlertModule } from './stockalert/stockalert.module';
 import { SupplierModule } from './supplier/supplier.module';
 import { OrderModule } from './order/order.module';
 import { ShipmentModule } from './shipment/shipment.module';
+import { AuthModule } from './auth/auth.module';
+import { RefundModule } from './refund/refund.module';
+import { RefundItemModule } from './refunditem/refunditem.module';
+import { DiscountModule } from './discount/discount.module';
+import { DiscountProductModule } from './discountproduct/discountproduct.module';
 
 
 @Module({
   imports: [UserModule, ProductModule, CartModule, CartItemModule, RoleModule
-    , UserroleModule, ProductCategoryModule, CategoryModule, InventoryModule, 
-  BatchModule, StockAlertModule, SupplierModule, OrderModule, ShipmentModule],
+  , UserroleModule, ProductCategoryModule, CategoryModule, InventoryModule, 
+  BatchModule, StockAlertModule, SupplierModule, OrderModule, ShipmentModule,
+  AuthModule, RefundModule, RefundItemModule, DiscountModule, DiscountProductModule],
   controllers: [AppController],
   providers: [AppService],
 })
