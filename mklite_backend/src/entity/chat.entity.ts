@@ -22,18 +22,14 @@ export class Chat {
     @Column({ length: 20 })
     estado: string; 
 
-
-
     @ManyToOne(() => User, (user) => user.chatsAsClient)
     @JoinColumn({ name: 'id_cliente' }) 
     client: User;
 
-  
     @ManyToOne(() => User, (user) => user.chatsAsSupport)
     @JoinColumn({ name: 'id_agente_soporte' }) 
     supportAgent: User;
 
-   
     @OneToMany(() => Message, (message) => message.chat)
     messages: Message[];
 }

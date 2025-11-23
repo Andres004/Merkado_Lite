@@ -1,6 +1,7 @@
-import { Entity, PrimaryGeneratedColumn, Column, Unique } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, Unique, OneToOne, JoinColumn } from 'typeorm';
+import { Order } from './order.entity';
 
-@Entity('envio') // Nombre de la tabla en BD (Español)
+@Entity('envio')
 @Unique(['id_pedido'])
 export class Shipment {
     @PrimaryGeneratedColumn()
@@ -10,7 +11,7 @@ export class Shipment {
     id_pedido: number;
 
     @Column({ nullable: true })
-    id_repartidor: number; // ID del usuario con rol repartidor
+    id_repartidor: number;
 
     @Column({ length: 100, nullable: true })
     sector: string;
@@ -29,4 +30,9 @@ export class Shipment {
 
     @Column({ nullable: true })
     calificacion_cliente: number;
+
+    
+    @OneToOne(() => Order, (order) => order.shipment)
+    @JoinColumn({ name: 'id_pedido' }) 
+    order: Order; 
 }

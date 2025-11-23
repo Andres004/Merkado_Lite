@@ -23,7 +23,8 @@ export class RefundService {
   async create(refundData: Partial<Refund>): Promise<Refund> {
     if (!refundData.id_usuario_vendedor) throw new BadRequestException('ID Vendedor requerido');
     
-    const idPedido = refundData['id_pedido'] || (refundData.pedido ? refundData.pedido.id_pedido : null);
+    // Nota: El frontend puede enviar 'id_pedido' o el objeto 'order'
+    const idPedido = refundData['id_pedido'] || (refundData.order ? refundData.order.id_pedido : null);
     
     if (!idPedido) throw new BadRequestException('ID Pedido requerido');
 
@@ -36,7 +37,7 @@ export class RefundService {
 
     const refund = this.refundRepository.create({
         ...refundData,
-        pedido: pedido,
+        order: pedido, // CAMBIO: .pedido -> .order
         fecha: new Date()
     });
     
@@ -45,7 +46,7 @@ export class RefundService {
 
   async findAll(): Promise<Refund[]> {
     return await this.refundRepository.find({
-      relations: ['pedido', 'vendedor'],
+      relations: ['order', 'seller'], // CAMBIO: .pedido -> .order, .vendedor -> .seller
       order: { fecha: 'DESC' }
     });
   }
@@ -53,7 +54,7 @@ export class RefundService {
   async findOne(id: number): Promise<Refund> {
     const refund = await this.refundRepository.findOne({
       where: { id_devolucion: id },
-      relations: ['pedido', 'vendedor', 'refundItems'] 
+      relations: ['order', 'seller', 'refundItems'] // CAMBIO: .pedido -> .order
     });
 
     if (!refund) throw new NotFoundException(`Reembolso con ID ${id} no encontrado`);
@@ -63,15 +64,15 @@ export class RefundService {
   async findByVendedorId(idVendedor: number): Promise<Refund[]> {
     return await this.refundRepository.find({
       where: { id_usuario_vendedor: idVendedor },
-      relations: ['pedido'],
+      relations: ['order'], // CAMBIO: .pedido -> .order
       order: { fecha: 'DESC' }
     });
   }
 
   async findByPedidoId(idPedido: number): Promise<Refund[]> {
     return await this.refundRepository.find({
-      where: { pedido: { id_pedido: idPedido } },
-      relations: ['pedido'],
+      where: { order: { id_pedido: idPedido } }, // CAMBIO: .pedido -> .order
+      relations: ['order'], // CAMBIO: .pedido -> .order
       order: { fecha: 'DESC' }
     });
   }
@@ -90,7 +91,7 @@ export class RefundService {
   async getRefundsByDateRange(fechaInicio: Date, fechaFin: Date): Promise<Refund[]> {
     return await this.refundRepository.find({
       where: { fecha: Between(fechaInicio, fechaFin) },
-      relations: ['pedido'],
+      relations: ['order'], // CAMBIO: .pedido -> .order
       order: { fecha: 'DESC' }
     });
   }
