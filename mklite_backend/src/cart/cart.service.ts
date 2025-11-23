@@ -8,6 +8,9 @@ export class CartService {
   private cartRepository: Repository<Cart>;
 
   constructor() {
+    if (!AppDataSource.isInitialized) {
+        throw new Error('DataSource no está inicializado');
+    }
     this.cartRepository = AppDataSource.getRepository(Cart);
   }
 
@@ -19,22 +22,35 @@ export class CartService {
     return await this.cartRepository.find({ relations: ['user', 'cartItems'] });
   }
 
-  async getCartById(id_carrito: number): Promise<Cart> {
+  // --- AQUÍ ESTÁ LA MAGIA QUE TE FALTA ---
+  async getCartById(id_carrito: number): Promise<any> { // Retorna any para poder añadir campos extra
     const cart = await this.cartRepository.findOne({
       where: { id_carrito },
       relations: ['user', 'cartItems', 'cartItems.product'],
     });
+
     if (!cart) {
       throw new NotFoundException(`Carrito con ID ${id_carrito} no encontrado`);
     }
-    return cart;
+
+    // Calculamos la suma: (Precio * Cantidad) de cada item
+    const totalCalculado = cart.cartItems.reduce((acc, item) => {
+        return acc + (Number(item.precio_unitario) * item.cantidad);
+    }, 0);
+
+    // Devolvemos el objeto carrito mezclado con el nuevo campo
+    return {
+        ...cart,
+        totalEstimado: totalCalculado 
+    };
   }
 
-  async updateCart(id_carrito: number, updateData: Partial<Cart>): Promise<Cart> {
+  async updateCart(id_carrito: number, updateData: Partial<Cart>): Promise<any> {
     const updateResult = await this.cartRepository.update(id_carrito, updateData);
     if (updateResult.affected === 0) {
       throw new NotFoundException(`Carrito con ID ${id_carrito} no encontrado para actualizar`);
     }
+    // Llamamos a getCartById para que devuelva el objeto actualizado CON el total
     return this.getCartById(id_carrito);
   }
 
@@ -46,17 +62,16 @@ export class CartService {
     return { message: `Carrito con ID ${id_carrito} eliminado correctamente` };
   }
 
-  // Crear un carrito nuevo para un usuario
   async createCartForUser(id_usuario: number): Promise<Cart> {
-    const newCart = new Cart();
-    newCart.id_usuario = id_usuario;
-    newCart.fecha_creacion = new Date();
-    newCart.estado = true;
-    newCart.descuento_aplicado = false;
+    const newCart = this.cartRepository.create({
+        id_usuario,
+        fecha_creacion: new Date(),
+        estado: true,
+        descuento_aplicado: false
+    });
     return await this.cartRepository.save(newCart);
   }
 
-  // Obtener todos los carritos de un usuario con items y productos cargados
   async getCartsByUserId(id_usuario: number): Promise<Cart[]> {
     return await this.cartRepository.find({
       where: { id_usuario },
@@ -64,8 +79,8 @@ export class CartService {
     });
   }
 
-  // Buscar carrito activo de usuario, si no existe crear uno
-  async findOrCreateActiveCart(id_usuario: number): Promise<Cart> {
+  // También añadimos el cálculo aquí por si acaso lo necesitas al agregar productos
+  async findOrCreateActiveCart(id_usuario: number): Promise<any> {
     let cart = await this.cartRepository.findOne({
       where: { id_usuario, estado: true },
       relations: ['cartItems', 'cartItems.product'],
@@ -73,7 +88,15 @@ export class CartService {
 
     if (!cart) {
       cart = await this.createCartForUser(id_usuario);
+      // Si es nuevo, no tiene items, total es 0
+      return { ...cart, totalEstimado: 0 };
     }
-    return cart;
+
+    // Si ya existe, calculamos el total
+    const totalCalculado = cart.cartItems ? cart.cartItems.reduce((acc, item) => {
+        return acc + (Number(item.precio_unitario) * item.cantidad);
+    }, 0) : 0;
+
+    return { ...cart, totalEstimado: totalCalculado };
   }
 }
