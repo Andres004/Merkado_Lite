@@ -1,6 +1,8 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
 import { Cart } from './cart.entity';
 import { UserRole } from './userrole.entity';
+import { Chat } from './chat.entity';
+import { Message } from './message.entity';
 
 @Entity('usuario')
 export class User {
@@ -28,9 +30,24 @@ export class User {
     @Column({ length: 255, nullable: true })
     direccion: string;
 
+    // --- Relaciones Existentes ---
     @OneToMany(() => UserRole, (userrole) => userrole.usuario)
     userRoles: UserRole[];
 
     @OneToMany(() => Cart, (cart) => cart.user)
     carts: Cart[];
+
+    // --- NUEVAS RELACIONES (Chat Module) ---
+    
+    // 1. Chats donde este usuario es el Cliente
+    @OneToMany(() => Chat, (chat) => chat.client)
+    chatsAsClient: Chat[];
+
+    // 2. Chats donde este usuario es el Agente de Soporte
+    @OneToMany(() => Chat, (chat) => chat.supportAgent)
+    chatsAsSupport: Chat[];
+
+    // 3. Mensajes enviados por este usuario
+    @OneToMany(() => Message, (message) => message.sender)
+    sentMessages: Message[];
 }

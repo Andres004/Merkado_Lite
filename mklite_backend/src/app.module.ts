@@ -20,13 +20,15 @@ import { RefundModule } from './refund/refund.module';
 import { RefundItemModule } from './refunditem/refunditem.module';
 import { DiscountModule } from './discount/discount.module';
 import { DiscountProductModule } from './discountproduct/discountproduct.module';
+import { ChatModule } from './chat/chat.module';
 
 
 @Module({
   imports: [UserModule, ProductModule, CartModule, CartItemModule, RoleModule
   , UserroleModule, ProductCategoryModule, CategoryModule, InventoryModule, 
   BatchModule, StockAlertModule, SupplierModule, OrderModule, ShipmentModule,
-  AuthModule, RefundModule, RefundItemModule, DiscountModule, DiscountProductModule],
+  AuthModule, RefundModule, RefundItemModule, DiscountModule, DiscountProductModule,
+  ChatModule],
   controllers: [AppController],
   providers: [AppService],
 })
