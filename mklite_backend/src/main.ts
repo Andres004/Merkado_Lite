@@ -4,23 +4,17 @@ import { AppDataSource } from './data-source';
 
 async function bootstrap() {
   try {
-    if (!AppDataSource.isInitialized) {
-      await AppDataSource.initialize();
-    }
-    console.log('DataSource inicializado correctamente');
+    await AppDataSource.initialize(); // espera que la conexión esté lista
+    console.log('DataSource inicializado');
   } catch (error) {
-    console.error('Error fatal al conectar la Base de Datos:', error);
-    process.exit(1); 
+    console.error('Error inicializando DataSource', error);
+    process.exit(1); // aborta la app si no puede conectarse
   }
-
-  const app = await NestFactory.create(AppModule);
-
-  app.enableCors(); 
-  app.enableShutdownHooks(); 
-
-  const port = process.env.PORT ?? 3005;
-  await app.listen(port);
-  console.log(`Servidor corriendo en: http://localhost:${port}`);
+  
+  const app = await NestFactory.create(AppModule, { cors: true });
+  app.enableShutdownHooks();
+  await app.listen(process.env.PORT ?? 3005);
+  console.log(`Servidor corriendo en puerto ${process.env.PORT ?? 3005}`);
 }
 
 bootstrap();

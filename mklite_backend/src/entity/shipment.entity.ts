@@ -1,5 +1,6 @@
-import { Entity, PrimaryGeneratedColumn, Column, Unique, OneToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, Unique, OneToOne, JoinColumn, OneToMany } from 'typeorm';
 import { Order } from './order.entity';
+import { UserPenalty } from './userpenalty.entity';
 
 @Entity('envio')
 @Unique(['id_pedido'])
@@ -31,8 +32,10 @@ export class Shipment {
     @Column({ nullable: true })
     calificacion_cliente: number;
 
-    
     @OneToOne(() => Order, (order) => order.shipment)
     @JoinColumn({ name: 'id_pedido' }) 
     order: Order; 
+
+    @OneToMany(() => UserPenalty, (penalty) => penalty.shipment)
+    penalties: UserPenalty[];
 }

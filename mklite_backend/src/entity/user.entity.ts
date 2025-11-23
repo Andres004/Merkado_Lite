@@ -5,6 +5,7 @@ import { Chat } from './chat.entity';
 import { Message } from './message.entity';
 import { Order } from './order.entity';
 import { Refund } from './refund.entity';
+import { UserPenalty } from './userpenalty.entity'; 
 
 @Entity('usuario')
 export class User {
@@ -32,7 +33,8 @@ export class User {
     @Column({ length: 255, nullable: true })
     direccion: string;
 
-    // --- RELACIONES ---
+    @Column({ name: 'estado_cuenta', length: 20, default: 'activo' })
+    accountStatus: string; 
 
     @OneToMany(() => UserRole, (userrole) => userrole.usuario)
     userRoles: UserRole[];
@@ -54,4 +56,7 @@ export class User {
 
     @OneToMany(() => Refund, (refund) => refund.seller)
     processedRefunds: Refund[];
+
+    @OneToMany(() => UserPenalty, (penalty) => penalty.user)
+    penalties: UserPenalty[];
 }
