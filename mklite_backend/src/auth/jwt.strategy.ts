@@ -1,19 +1,27 @@
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PassportStrategy } from '@nestjs/passport';
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { UserService } from '../user/user.service'; // Importar UserService
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor() {
+  constructor(private userService: UserService) { // Inyectar servicio
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: 'CLAVE_SECRETA_SUPER_SEGURA', // EN PRODUCCION USAR VARIABLES DE ENTORNO (.ENV)
+      secretOrKey: 'CLAVE_SECRETA_SUPER_SEGURA', 
     });
   }
 
   async validate(payload: any) {
-    // Esto inyecta el usuario en el objeto request (req.user)
-    return { id_usuario: payload.sub, email: payload.email };
+    // Buscamos el usuario completo CON sus roles
+    const user = await this.userService.getUserById(payload.sub);
+    
+    if (!user) {
+        throw new UnauthorizedException('Usuario no encontrado o inactivo');
+    }
+
+    // Esto inyecta el usuario completo (con roles) en req.user
+    return user; 
   }
 }

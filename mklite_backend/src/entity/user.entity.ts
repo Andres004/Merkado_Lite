@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany, CreateDateColumn } from 'typeorm';
 import { Cart } from './cart.entity';
 import { UserRole } from './userrole.entity';
 import { Chat } from './chat.entity';
@@ -35,6 +35,12 @@ export class User {
 
     @Column({ name: 'estado_cuenta', length: 20, default: 'activo' })
     accountStatus: string; 
+
+    @Column({ name: 'es_admin_principal', default: false })
+    esAdminPrincipal: boolean;
+
+    @CreateDateColumn({ name: 'fecha_registro' }) 
+    fechaRegistro: Date;
 
     @OneToMany(() => UserRole, (userrole) => userrole.user)
     userRoles: UserRole[];

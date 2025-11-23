@@ -1,23 +1,40 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, Query } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Patch, Param, Body, Query, ParseIntPipe, UseGuards } from '@nestjs/common';
 import { UserService } from './user.service';
 import { User } from 'src/entity/user.entity';
+import { AuthGuard } from '@nestjs/passport'; // El guardia base de JWT
+import { RolesGuard } from 'src/auth/roles.guard'; // Tu guardia nuevo
+import { Roles } from 'src/auth/roles.decorator'; // Tu decorador
 
 @Controller('user')
+// 1. PROTECCIÓN GLOBAL: Nadie entra aquí sin Token
+@UseGuards(AuthGuard('jwt'), RolesGuard) 
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
+  // Solo un Admin puede crear usuarios directamente (o quitar este endpoint si solo usas /auth/register)
   @Post()
+  @Roles('Administrador') 
   async createUser(@Body() user: User) {
     return this.userService.createUser(user);
   }
 
-  // Obtener usuarios con paginacion
+  // Solo un Admin puede promover a otro Admin (HU-F22)
+  @Patch('/:id_usuario/set-principal')
+  @Roles('Administrador')
+  async setPrincipalAdmin(
+    @Param('id_usuario', ParseIntPipe) id_usuario: number,
+    @Body() body: { status: boolean }
+  ) {
+    return this.userService.setPrincipalAdmin(id_usuario, body.status);
+  }
+
+  // Admin y Ventas pueden ver usuarios
   @Get() 
+  @Roles('Administrador', 'Ventas')
   async getAllUsers(
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 10
   ) {
-    // Aseguramos que sean numeros
     return this.userService.getAllUsers(Number(page), Number(limit));
   }
 
@@ -32,6 +49,7 @@ export class UserController {
   }
 
   @Delete('/:id_usuario')
+  @Roles('Administrador')
   async deleteUser(@Param('id_usuario') id_usuario: string) {
     return this.userService.deleteUser(Number(id_usuario));
   }

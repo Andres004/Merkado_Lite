@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, ConflictException, BadRequestException }
 import { AppDataSource } from "src/data-source";
 import { User } from "src/entity/user.entity";
 import { UserRole } from "src/entity/userrole.entity";
+import { Role } from "src/entity/role.entity"; // Necesario para buscar el rol de Admin
 import { Repository } from "typeorm";
 import * as bcrypt from 'bcrypt';
 
@@ -9,6 +10,7 @@ import * as bcrypt from 'bcrypt';
 export class UserService {
     private userRepository: Repository<User>;
     private userRoleRepository: Repository<UserRole>;
+    private roleRepository: Repository<Role>;
 
     constructor() {
        this.initRepositories();
@@ -18,6 +20,7 @@ export class UserService {
         if (AppDataSource.isInitialized) {
             this.userRepository = AppDataSource.getRepository(User);
             this.userRoleRepository = AppDataSource.getRepository(UserRole);
+            this.roleRepository = AppDataSource.getRepository(Role);
         }
     }
 
@@ -31,13 +34,8 @@ export class UserService {
     async registerUser(userData: Partial<User>): Promise<User> {
         const repo = this.getUserRepo();
         
-        if (!userData.password) {
-            throw new BadRequestException('La contraseña es obligatoria');
-        }
-
-        if (!userData.email) {
-            throw new BadRequestException('El email es obligatorio');
-        }
+        if (!userData.password) throw new BadRequestException('La contraseña es obligatoria');
+        if (!userData.email) throw new BadRequestException('El email es obligatorio');
 
         const existing = await repo.findOneBy({ email: userData.email });
         if (existing) throw new ConflictException('El correo ya está registrado');
@@ -45,13 +43,17 @@ export class UserService {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(userData.password, salt);
 
+        // Crear usuario (fecha_registro se pone sola por @CreateDateColumn)
         const newUser = repo.create({
             ...userData,
-            password: hashedPassword
+            password: hashedPassword,
+            esAdminPrincipal: false // Por defecto false
         } as User); 
         
         const savedUser = await repo.save(newUser);
 
+        // Asignar Rol por defecto "Cliente" (Buscamos por ID 1 o por nombre si preferimos)
+        // Asumimos ID 1 = Cliente por consistencia con tus pruebas anteriores
         if (this.userRoleRepository) {
             const userRole = this.userRoleRepository.create({
                 id_usuario: savedUser.id_usuario,
@@ -64,6 +66,42 @@ export class UserService {
         return savedUser;
     }
 
+    // --- FUNCIONALIDAD COMPLETA: Designar Admin Principal ---
+    async setPrincipalAdmin(id_usuario: number, status: boolean): Promise<User> {
+        const user = await this.findOne(id_usuario); // Verifica existencia
+        
+        user.esAdminPrincipal = status;
+        
+        // Lógica de asignación automática de Rol
+        if (status === true) {
+            // 1. Buscar si existe el rol 'Administrador' en la DB
+            let adminRole = await this.roleRepository.findOneBy({ nombre: 'Administrador' });
+            
+            // Si no existe (porque limpiaste la DB), lo creamos al vuelo para que no falle
+            if (!adminRole) {
+                adminRole = this.roleRepository.create({ nombre: 'Administrador' });
+                adminRole = await this.roleRepository.save(adminRole);
+            }
+
+            // 2. Verificar si el usuario ya tiene ese rol asignado
+            const existingAssignment = await this.userRoleRepository.findOneBy({ 
+                id_usuario: user.id_usuario, 
+                id_rol: adminRole.id_rol 
+            });
+
+            // 3. Si no lo tiene, se lo asignamos
+            if (!existingAssignment) {
+                const newAssignment = this.userRoleRepository.create({
+                    id_usuario: user.id_usuario,
+                    id_rol: adminRole.id_rol
+                });
+                await this.userRoleRepository.save(newAssignment);
+            }
+        }
+
+        return await this.getUserRepo().save(user);
+    }
+
     // --- LOGIN ---
     async findByEmailForAuth(email: string): Promise<User | undefined> {
         const repo = this.getUserRepo();
@@ -72,10 +110,10 @@ export class UserService {
             .where("user.email = :email", { email })
             .getOne();
         
-        return user || undefined; 
+        return user || undefined;
     }
 
-    // --- FIND ONE (Genérico) ---
+    // --- CRUD ESTÁNDAR ---
     async findOne(id: number): Promise<User> {
         const user = await this.getUserRepo().findOneBy({ id_usuario: id });
         if (!user) throw new NotFoundException(`Usuario ${id} no encontrado`);
@@ -86,7 +124,6 @@ export class UserService {
         return await this.getUserRepo().save(user);
     }
 
-    // Obtener todos los usuarios con paginacion
     async getAllUsers(page: number = 1, limit: number = 10) {
         const repo = this.getUserRepo();
         const skip = (page - 1) * limit;

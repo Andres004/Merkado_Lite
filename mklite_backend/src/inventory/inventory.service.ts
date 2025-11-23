@@ -14,7 +14,6 @@ export class InventoryService {
         this.inventoryRepository = AppDataSource.getRepository(Inventory);
     }
 
-    // Obtiene el inventario de un producto específico
     async getInventoryByProductId(id_producto: number): Promise<Inventory> {
         const inventory = await this.inventoryRepository.findOneBy({ id_producto });
         if (!inventory) {
@@ -23,16 +22,12 @@ export class InventoryService {
         return inventory;
     }
 
-    // Crea o actualiza el inventario de un producto
     async setInventory(id_producto: number, data: Partial<Inventory>): Promise<Inventory> {
         const inventoryData = { ...data, id_producto };
-        
         await this.inventoryRepository.save(inventoryData);
-        
         return this.getInventoryByProductId(id_producto);
     }
 
-    // Actualización rápida solo del stock disponible
     async updateStockLevel(id_producto: number, cantidad: number): Promise<Inventory> {
         const inventory = await this.getInventoryByProductId(id_producto);
         inventory.stock_disponible = cantidad;
@@ -40,7 +35,6 @@ export class InventoryService {
         return await this.inventoryRepository.save(inventory);
     }
 
-    // Reduce el stock disponible global dentro de una transaccion
     async reduceStock(id_producto: number, cantidad: number, manager: EntityManager) {
         const inventory = await manager.findOne(Inventory, { where: { id_producto } });
 
@@ -54,6 +48,19 @@ export class InventoryService {
         if (inventory.stock_disponible < 0) {
              throw new Error(`Inconsistencia de inventario: El stock global no puede ser negativo.`);
         }
+
+        await manager.save(inventory);
+    }
+
+    async increaseStock(id_producto: number, cantidad: number, manager: EntityManager) {
+        const inventory = await manager.findOne(Inventory, { where: { id_producto } });
+
+        if (!inventory) {
+            throw new NotFoundException(`Inventario para producto ${id_producto} no encontrado.`);
+        }
+
+        inventory.stock_disponible += cantidad;
+        inventory.ultima_actualizacion = new Date();
 
         await manager.save(inventory);
     }
