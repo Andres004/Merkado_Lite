@@ -92,7 +92,7 @@ export class UserService {
         const skip = (page - 1) * limit;
 
         const [users, total] = await repo.findAndCount({
-            relations: ['userRoles', 'userRoles.rol'],
+            relations: ['userRoles', 'userRoles.role'],
             skip: skip,
             take: limit,
         });
@@ -112,7 +112,7 @@ export class UserService {
     async getUserById(id_usuario: number): Promise<User> {
         const user = await this.getUserRepo().findOne({
             where: { id_usuario },
-            relations: ['userRoles', 'userRoles.rol'],
+            relations: ['userRoles', 'userRoles.role'],
         });
         if (!user) throw new NotFoundException(`Usuario con ID ${id_usuario} no encontrado`);
         return user;

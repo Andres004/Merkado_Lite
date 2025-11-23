@@ -20,8 +20,6 @@ export class OrderItem {
     @Column({ type: 'decimal', precision: 10, scale: 2 })
     precio_unitario: number;
 
-    // --- Relaciones ---
-
     @ManyToOne(() => Order, (order) => order.items, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'id_pedido', referencedColumnName: 'id_pedido' })
     order: Order;

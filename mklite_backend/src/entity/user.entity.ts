@@ -36,7 +36,7 @@ export class User {
     @Column({ name: 'estado_cuenta', length: 20, default: 'activo' })
     accountStatus: string; 
 
-    @OneToMany(() => UserRole, (userrole) => userrole.usuario)
+    @OneToMany(() => UserRole, (userrole) => userrole.user)
     userRoles: UserRole[];
 
     @OneToMany(() => Cart, (cart) => cart.user)

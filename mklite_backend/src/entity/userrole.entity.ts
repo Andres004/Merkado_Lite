@@ -12,9 +12,9 @@ export class UserRole {
 
     @ManyToOne(() => User, (user) => user.userRoles, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'id_usuario', referencedColumnName: 'id_usuario' })
-    usuario: User;
+    user: User;
 
     @ManyToOne(() => Role, (role) => role.userRoles, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'id_rol', referencedColumnName: 'id_rol' })
-    rol: Role;
+    role: Role;
 }
