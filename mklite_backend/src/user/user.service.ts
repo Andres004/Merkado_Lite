@@ -60,4 +60,77 @@ export class UserService {
         }
         return this.getUserById(id_usuario);
     }
+
+    // Bloquear usuario (HU-F10, HU-F14)
+    async blockUser(id_usuario: number): Promise<User> {
+        const user = await this.getUserById(id_usuario);
+        user.activo = false;
+        return await this.getRepository().save(user);
+    }
+
+    // Desbloquear usuario
+    async unblockUser(id_usuario: number): Promise<User> {
+        const user = await this.getUserById(id_usuario);
+        user.activo = true;
+        return await this.getRepository().save(user);
+    }
+
+    // Verificar si usuario puede realizar compras (no bloqueado y sin penalizaciones activas)
+    async canUserMakePurchase(id_usuario: number, userPenaltyService: any): Promise<boolean> {
+        const user = await this.getUserById(id_usuario);
+        const hasActivePenalty = await userPenaltyService.userHasActivePenalty(id_usuario);
+        
+        return user.activo && !hasActivePenalty;
+    }
+
+    // Cambiar contraseña
+    async changePassword(id_usuario: number, newPassword: string): Promise<User> {
+        const user = await this.getUserById(id_usuario);
+        user.password = newPassword; // En producción, asegúrate de hashear la contraseña
+        return await this.getRepository().save(user);
+    }
+
+    // Obtener usuarios bloqueados
+    async getBlockedUsers(): Promise<User[]> {
+        return await this.getRepository().find({
+            where: { activo: false },
+            relations: ['sanciones']
+        });
+    }
+
+    // Obtener usuarios con penalizaciones activas
+    async getUsersWithActivePenalties(userPenaltyService: any): Promise<User[]> {
+        const allUsers = await this.getAllUsers();
+        const usersWithPenalties: User[] = [];
+
+        for (const user of allUsers) {
+            const hasActivePenalty = await userPenaltyService.userHasActivePenalty(user.id_usuario);
+            if (hasActivePenalty) {
+                usersWithPenalties.push(user);
+            }
+        }
+
+        return usersWithPenalties;
+    }
+
+    async getUserByEmail(email: string): Promise<User | null> {
+        return await this.getRepository().findOne({
+            where: { email },
+            relations: ['userRoles', 'userRoles.rol']
+        });
+    }
+
+    async validateUser(email: string, password: string): Promise<User | null> {
+        
+        try {
+            const user = await this.getUserByEmail(email);
+            // En producción, comparar con contraseña hasheada
+            if (user && user.password === password && user.activo) {
+                return user;
+            }
+            return null;
+        } catch (error) {
+            return null;
+        }
+    }
 }

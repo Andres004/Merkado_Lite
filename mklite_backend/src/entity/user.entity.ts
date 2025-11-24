@@ -1,6 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany, ManyToMany, JoinTable } from 'typeorm';
 import { Cart } from './cart.entity';
 import { UserRole } from './userrole.entity';
+import { UserPenalty } from './userpenalty.entity';
 
 @Entity('usuario')
 export class User {
@@ -28,9 +29,16 @@ export class User {
     @Column({ length: 255 })
     direccion: string; // varchar(255)
 
+    @Column()
+    activo: boolean; // En caso de estar o no bloqueado el usuario
+
     @OneToMany(() => UserRole, (userrole) => userrole.usuario)
     userRoles: UserRole[];
 
     @OneToMany(() => Cart, (cart) => cart.user)
     carts: Cart[];
+
+    @OneToMany(() => UserPenalty, (userPenalty) => userPenalty.usuario)
+    sanciones: UserPenalty[];
+
 }

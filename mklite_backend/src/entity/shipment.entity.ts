@@ -1,6 +1,7 @@
-import { Entity, PrimaryGeneratedColumn, Column, Unique } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, Unique, OneToMany } from 'typeorm';
+import { UserPenalty } from './userpenalty.entity';
 
-@Entity('envio') // Nombre de la tabla en BD (Español)
+@Entity('envio')
 @Unique(['id_pedido'])
 export class Shipment {
     @PrimaryGeneratedColumn()
@@ -15,8 +16,12 @@ export class Shipment {
     @Column({ length: 100, nullable: true })
     sector: string;
 
-    @Column({ length: 30 })
-    estado_envio: string; 
+    @Column({ 
+        type: 'enum', 
+        enum: ['PROCESANDO', 'EN_CAMINO', 'ENTREGADO', 'DEVUELTO', 'CANCELADO'],
+        default: 'PROCESANDO'
+    })
+    estado_envio: string;
 
     @Column({ nullable: true })
     fecha_salida: Date;
@@ -29,4 +34,8 @@ export class Shipment {
 
     @Column({ nullable: true })
     calificacion_cliente: number;
+
+    @OneToMany(() => UserPenalty, (userPenalty) => userPenalty.envio)
+    sanciones: UserPenalty[];
+
 }

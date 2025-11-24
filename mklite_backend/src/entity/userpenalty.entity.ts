@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinTable } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { User } from './user.entity';
 import { Shipment } from './shipment.entity';
 
@@ -16,20 +16,21 @@ export class UserPenalty {
     @Column({ type: 'text' })
     motivo: string;
 
-    @Column({ type: 'timestamp' })
+    @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
     fecha_inicio: Date;
 
     @Column({ type: 'timestamp', nullable: true })
     fecha_fin: Date;
 
-    @Column()
-    estado: boolean;
+    @Column({ type: 'varchar', length: 20, default: 'ACTIVA' })
+    estado: string;
 
-    @ManyToOne(() => User, (user) => user.id_usuario)
-    @JoinTable({ name: 'id_usuario' })
+    // Relaciones corregidas
+    @ManyToOne(() => User, (user) => user.sanciones)
+    @JoinColumn({ name: 'id_usuario' })
     usuario: User;
 
-    @ManyToOne(() => Shipment, (shipment) => shipment.id_envio)
-    @JoinTable({ name: 'id_envio' })
+    @ManyToOne(() => Shipment, (shipment) => shipment.sanciones)
+    @JoinColumn({ name: 'id_envio' })
     envio: Shipment;
 }
