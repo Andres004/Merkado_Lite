@@ -1,8 +1,7 @@
 // mklite_frontend/app/components/CategoriesSection.tsx
 
 import React from 'react';
-
-// Importamos los iconos necesarios para las categorías
+import Link from 'next/link';
 import { 
   Carrot, Utensils, Drumstick, Wheat, 
   BottleWine, Popcorn, Milk, Home, 
@@ -14,22 +13,25 @@ const categoriesData = [
   { name: "Frutas y Verduras", icon: Carrot },
   { name: "Fiambres y Embutidos", icon: Utensils },
   { name: "Carnes", icon: Drumstick },
-  { name: "Panadería", icon: Wheat },
+  { name: "Panaderia", icon: Wheat },
   { name: "Bebidas", icon: BottleWine },
   { name: "Snacks", icon: Popcorn },
-  { name: "Lácteos", icon: Milk },
+  { name: "Lacteos", icon: Milk },
   { name: "Cuidado del Hogar", icon: Home },
   { name: "Cuidado Personal", icon: Droplet },
-  { name: "Cuidado del Bebé", icon: Baby },
+  { name: "Cuidado del Bebe", icon: Baby },
   { name: "Congelados", icon: Snowflake },
   { name: "Mascotas", icon: PawPrint },
 ];
+
+// Función para generar "slugs" a partir del nombre
+const slugify = (text: string) =>
+  text.toLowerCase().replace(/ /g, "-").replace(/[^\w-]+/g, "");
 
 const CategoriesSection = () => {
   return (
     <section className="py-12 bg-white">
       <div className="max-w-7xl mx-auto px-4">
-        
         {/* Encabezado de la Sección */}
         <div className="flex items-center justify-between mb-8">
           <h2 className="text-3xl font-extrabold text-gray-800">
@@ -42,12 +44,12 @@ const CategoriesSection = () => {
           </a>
         </div>
 
-        {/* Cuadrícula de Categorías (Grid de 6x2) */}
+        {/* Cuadrícula de Categorías */}
         <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-4">
-          
           {categoriesData.map((category, index) => (
-            <div 
+            <Link 
               key={index} 
+              href={`/categoria/${slugify(category.name)}`}
               className="flex flex-col items-center justify-center p-4 border border-gray-200 rounded-lg hover:shadow-lg transition duration-300 cursor-pointer h-32 bg-white"
             >
               {/* Contenedor del Icono */}
@@ -59,7 +61,7 @@ const CategoriesSection = () => {
               <p className="text-sm text-center font-medium text-gray-700">
                 {category.name}
               </p>
-            </div>
+            </Link>
           ))}
         </div>
       </div>
