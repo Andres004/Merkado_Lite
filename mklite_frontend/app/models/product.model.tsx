@@ -8,9 +8,9 @@ export interface ProductModel {
     nombre: string;
     descripcion: string;
     precio_venta: number;        
-    stock_actual?: number; // Opcional
+    //stock_actual?: number; // Opcional
     imagen_url: string;      
-    estado?: boolean;
+    //estado?: boolean;
     
     
     productCategories?: {
