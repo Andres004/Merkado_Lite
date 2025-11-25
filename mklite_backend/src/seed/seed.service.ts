@@ -50,7 +50,7 @@ export class SeedService implements OnModuleInit {
         categoria: { nombre: 'Fiambres y Embutidos', descripcion: 'Jamones, salchichas y más.' },
         productos: [
           { nombre: 'Jamón Cerdo 200g', descripcion: 'Rebanado.', precio_venta: 16.50, imagen_url: '/images/fiambres/jamon.jpg' },
-          { nombre: 'Salchicha Vienesa 1kg', descripcion: 'Paquete familiar.', precio_venta: 22.00, imagen_url: '/img/fiambres/salchicha.jpg' },
+          { nombre: 'Salchicha Vienesa 1kg', descripcion: 'Paquete familiar.', precio_venta: 22.00, imagen_url: '/images/fiambres/salchicha.jpg' },
           { nombre: 'Mortadela 500g', descripcion: 'Familiar.', precio_venta: 14.00, imagen_url: '/images/fiambres/mortadela.jpg' },
           { nombre: 'Chorizo parrillero', descripcion: 'Para asados.', precio_venta: 18.00, imagen_url: '/images/fiambres/chorizo.jpg' },
           { nombre: 'Tocino', descripcion: 'Ahumado.', precio_venta: 20.00, imagen_url: '/images/fiambres/tocino.jpg' },
