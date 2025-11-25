@@ -11,6 +11,13 @@ export class InventoryController {
 
     constructor(private readonly inventoryService: InventoryService) {}
 
+    // NUEVO: Endpoint para la tabla de gestión (Admin/Almacén)
+    @Get()
+    @Roles('Administrador', 'Almacén', 'Ventas')
+    async getAllInventory() {
+        return await this.inventoryService.getAllInventory();
+    }
+
     @Get('/:id_producto')
     @Roles('Administrador', 'Almacén', 'Ventas')
     async getInventory(@Param('id_producto', ParseIntPipe) id_producto: number) {

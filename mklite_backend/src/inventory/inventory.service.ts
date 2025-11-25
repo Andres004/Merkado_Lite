@@ -14,9 +14,23 @@ export class InventoryService {
         this.inventoryRepository = AppDataSource.getRepository(Inventory);
     }
 
+    // NUEVO: Obtener todo el inventario con datos del producto (Para la tabla de Admin)
+    async getAllInventory(): Promise<Inventory[]> {
+        return await this.inventoryRepository.find({
+            relations: ['product'], // Trae el nombre, precio, etc.
+            order: { id_producto: 'ASC' }
+        });
+    }
+
     async getInventoryByProductId(id_producto: number): Promise<Inventory> {
-        const inventory = await this.inventoryRepository.findOneBy({ id_producto });
+        const inventory = await this.inventoryRepository.findOne({
+            where: { id_producto },
+            relations: ['product'] // Aseguramos traer el producto también aquí
+        });
+        
         if (!inventory) {
+            // Si no existe inventario, intentamos devolver una estructura vacía si el producto existe
+            // O lanzamos error según tu lógica. Para ser estrictos:
             throw new NotFoundException(`Inventario no encontrado para el producto ${id_producto}`);
         }
         return inventory;
