@@ -21,15 +21,21 @@ import { RefundItemModule } from './refunditem/refunditem.module';
 import { DiscountModule } from './discount/discount.module';
 import { DiscountProductModule } from './discountproduct/discountproduct.module';
 import { ChatModule } from './chat/chat.module';
-
+//
+import { SeedService } from './seed/seed.service'; // Importa el servicio
+// import { UserModule } from './user/user.module';
+//import { TypeOrmModule } from '@nestjs/typeorm'
+import { Category } from './entity/category.entity'; // Importar la entidad
 
 @Module({
   imports: [UserModule, ProductModule, CartModule, CartItemModule, RoleModule
   , UserroleModule, ProductCategoryModule, CategoryModule, InventoryModule, 
   BatchModule, StockAlertModule, SupplierModule, OrderModule, ShipmentModule,
   AuthModule, RefundModule, RefundItemModule, DiscountModule, DiscountProductModule,
-  ChatModule],
+  ChatModule,],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService,SeedService],
 })
 export class AppModule {}
+
+//TypeOrmModule.forFeature([Category]),
