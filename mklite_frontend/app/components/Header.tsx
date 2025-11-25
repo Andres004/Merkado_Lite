@@ -6,17 +6,49 @@ import Link from 'next/link';
 import Modal from './Modal';
 import LoginForm from './LoginForm';
 import RegisterForm from './RegisterForm';
+import { getCartByUserService } from '../services/cart.service'; // Importamos el servicio
 
 const Header = () => {
   const [authModal, setAuthModal] = useState<'login' | 'register' | null>(null);
   const [user, setUser] = useState<any>(null);
+  const [cartCount, setCartCount] = useState(0); // Estado para el contador
 
-  // Cargar usuario al inicio
-  useEffect(() => {
+  // Función para cargar el carrito
+  const fetchCartCount = async () => {
     const storedUser = localStorage.getItem('userData');
     if (storedUser) {
-      setUser(JSON.parse(storedUser));
+      const parsedUser = JSON.parse(storedUser);
+      setUser(parsedUser);
+      try {
+        const cart = await getCartByUserService(parsedUser.id_usuario);
+        if (cart && cart.cartItems) {
+          // Sumamos la cantidad de todos los items
+          const totalItems = cart.cartItems.reduce((acc: number, item: any) => acc + item.cantidad, 0);
+          setCartCount(totalItems);
+        } else {
+          setCartCount(0);
+        }
+      } catch (error) {
+        console.error("Error cargando carrito header", error);
+        setCartCount(0);
+      }
+    } else {
+      setUser(null);
+      setCartCount(0);
     }
+  };
+
+  // Cargar al inicio y escuchar eventos
+  useEffect(() => {
+    fetchCartCount();
+
+    // Escuchar el evento "cartUpdated" que creamos en el servicio
+    window.addEventListener('cartUpdated', fetchCartCount);
+    
+    // Limpieza
+    return () => {
+      window.removeEventListener('cartUpdated', fetchCartCount);
+    };
   }, []);
 
   const closeAuth = () => setAuthModal(null);
@@ -25,13 +57,14 @@ const Header = () => {
     localStorage.removeItem('authToken');
     localStorage.removeItem('userData');
     setUser(null);
-    window.location.reload();
+    setCartCount(0);
+    window.location.href = '/'; // Recarga completa para limpiar estados
   };
 
   return (
     <>
       <header className="bg-white shadow-md relative z-40">
-        {/* ➡️ SECCIÓN SUPERIOR */}
+        {/* SECCION SUPERIOR */}
         <div className="flex items-center justify-between p-3 max-w-7xl mx-auto border-b border-gray-100">
           
           {/* LOGO */}
@@ -63,31 +96,30 @@ const Header = () => {
               </div>
             </div>
             
-            {/* Carrito */}
-            <div className="flex items-center cursor-pointer hover:text-red-600 transition">
+            {/* Carrito (CON LINK Y CONTADOR REAL) */}
+            <Link href="/carrito" className="flex items-center cursor-pointer hover:text-red-600 transition">
               <ShoppingCart size={20} className="mr-1" />
               <div className="text-sm hidden sm:block">
                 <span>Carrito</span>
-                <span className="ml-1 text-red-600 font-bold">(0)</span>
+                <span className="ml-1 text-red-600 font-bold">({cartCount})</span>
               </div>
-            </div>
+            </Link>
             
             {/* Cuenta/Login */}
             {user ? (
-               // ARREGLO AQUÍ: Usamos un contenedor relativo con padding para el menú
                <div className="relative flex items-center gap-2 group cursor-pointer h-10">
                  <User size={20} className="text-red-600" />
                  <span className="text-sm font-bold text-gray-800 select-none">Hola, {user.nombre}</span>
                  
-                 {/* MENÚ DESPLEGABLE
-                     pt-4: Crea un puente invisible para que el mouse no se caiga.
-                     min-w-[150px]: Le da un ancho mínimo para que no se vea aplastado.
-                 */}
                  <div className="absolute top-full right-0 pt-4 hidden group-hover:block z-50 min-w-[150px]">
                     <div className="bg-white shadow-xl rounded-lg p-2 border border-gray-100 flex flex-col gap-1">
-                        <div className="px-2 py-1 text-xs text-gray-400 border-b mb-1 uppercase tracking-wider">
-                          Mi Cuenta
-                        </div>
+                        <Link 
+                          href="/perfil"
+                          className="w-full text-left px-2 py-2 text-sm text-gray-600 hover:bg-red-50 hover:text-red-700 rounded-md transition-colors font-medium block"
+                        >
+                          Mi Perfil
+                        </Link>
+
                         <button 
                           onClick={handleLogout} 
                           className="w-full text-left text-sm text-red-600 hover:bg-red-50 hover:text-red-700 p-2 rounded-md transition-colors font-medium"
@@ -110,47 +142,30 @@ const Header = () => {
           </div>
         </div>
 
-        {/* ➡️ SECCIÓN DE NAVEGACIÓN INFERIOR */}
+        {/* NAVEGACIÓN INFERIOR */}
         <nav className="p-3 max-w-7xl mx-auto flex items-center space-x-8 text-sm text-gray-700 font-medium overflow-x-auto">
-          
           <div className="flex items-center cursor-pointer hover:text-red-600 transition whitespace-nowrap">
               Categorías 
               <ChevronDown size={16} className="ml-1" />
           </div>
-
           {['Inicio', 'Blog', 'About Us', 'Contactanos'].map((item) => (
             <Link key={item} href="#" className="hover:text-red-600 transition whitespace-nowrap">
               {item}
             </Link>
           ))}
-          
           <div className="ml-auto text-red-600 font-semibold flex items-center whitespace-nowrap">
               📞 +591 66800011
           </div>
         </nav>
       </header>
 
-      {/* --- MODALES --- */}
-      <Modal 
-        isOpen={authModal === 'login'} 
-        onClose={closeAuth} 
-        title="Iniciar Sesión"
-      >
-        <LoginForm 
-          onSuccess={() => { closeAuth(); window.location.reload(); }} 
-          onSwitchToRegister={() => setAuthModal('register')} 
-        />
+      {/* MODALES */}
+      <Modal isOpen={authModal === 'login'} onClose={closeAuth} title="Iniciar Sesión">
+        <LoginForm onSuccess={() => { closeAuth(); window.location.reload(); }} onSwitchToRegister={() => setAuthModal('register')} />
       </Modal>
 
-      <Modal 
-        isOpen={authModal === 'register'} 
-        onClose={closeAuth} 
-        title="Crear Cuenta"
-      >
-        <RegisterForm 
-          onSuccess={() => setAuthModal('login')} 
-          onSwitchToLogin={() => setAuthModal('login')} 
-        />
+      <Modal isOpen={authModal === 'register'} onClose={closeAuth} title="Crear Cuenta">
+        <RegisterForm onSuccess={() => setAuthModal('login')} onSwitchToLogin={() => setAuthModal('login')} />
       </Modal>
     </>
   );
