@@ -27,6 +27,10 @@ export class UserPenaltyService {
             throw new BadRequestException('El usuario ya tiene una penalización activa');
         }
 
+        if(!userPenalty.motivo == null || userPenalty.motivo === '') {
+            userPenalty.motivo = 'Indefinido';
+        }
+
         return await this.getRepository().save(userPenalty);
     }
 
@@ -80,7 +84,7 @@ export class UserPenaltyService {
     }
 
 
-    // Verificar si usuario tiene penalización activa (CORREGIDO)
+    // Verificar si usuario tiene penalización activa
     async userHasActivePenalty(id_usuario: number): Promise<boolean> {
         const activePenalty = await this.getRepository().findOne({
             where: [

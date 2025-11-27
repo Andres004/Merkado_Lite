@@ -13,7 +13,7 @@ export class UserPenalty {
     @Column()
     id_envio: number;
 
-    @Column({ type: 'text' })
+    @Column({ type: 'text', nullable: true })
     motivo: string;
 
     @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
