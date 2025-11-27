@@ -25,6 +25,11 @@ export class OrderService {
     }
 
     async createOrder(dto: CreateOrderDto): Promise<Order> {
+        // solo efectivo
+        if (dto.metodo_pago !== 'efectivo') {
+            throw new BadRequestException('solo emn "efectivo".');
+        }
+
         const queryRunner = AppDataSource.createQueryRunner(); 
         await queryRunner.connect();
         await queryRunner.startTransaction();
