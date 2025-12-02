@@ -8,8 +8,4 @@ import { StockAlertController } from "./stockalert.controller";
     providers: [StockAlertService],
     exports: [StockAlertService],
 })
-<<<<<<< HEAD
 export class StockAlertModule {}
-=======
-export class StockAlertModule {}
->>>>>>> Backend-andy

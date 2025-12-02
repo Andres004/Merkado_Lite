@@ -2,9 +2,9 @@ import { Injectable, NotFoundException, ConflictException, BadRequestException }
 import { AppDataSource } from "src/data-source";
 import { User } from "src/entity/user.entity";
 import { UserRole } from "src/entity/userrole.entity";
-import { Role } from "src/entity/role.entity"; // Necesario para buscar el rol de Admin
+import { Role } from "src/entity/role.entity";
 import { Repository } from "typeorm";
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 
 @Injectable()
 export class UserService {
@@ -53,7 +53,6 @@ export class UserService {
         const savedUser = await repo.save(newUser);
 
         // Asignar Rol por defecto "Cliente" (Buscamos por ID 1 o por nombre si preferimos)
-        // Asumimos ID 1 = Cliente por consistencia con tus pruebas anteriores
         if (this.userRoleRepository) {
             const userRole = this.userRoleRepository.create({
                 id_usuario: savedUser.id_usuario,
@@ -66,29 +65,6 @@ export class UserService {
         return savedUser;
     }
 
-<<<<<<< HEAD
-    async getAllUsers() {
-        return await this.getRepository().find({
-            relations: [
-                'userRoles',      
-                'userRoles.rol' 
-            ],
-        });
-    }
-    
-    async getUserById(id_usuario: number): Promise<User> {
-        const user = await this.getRepository().findOne({
-            where: { id_usuario },
-            relations: [
-                'userRoles',      
-                'userRoles.rol'   
-            ],
-        });
-
-        if (!user) {
-            throw new NotFoundException(`Usuario con ID ${id_usuario} no encontrado`);
-        }
-=======
     // --- FUNCIONALIDAD COMPLETA: Designar Admin Principal ---
     async setPrincipalAdmin(id_usuario: number, status: boolean): Promise<User> {
         const user = await this.findOne(id_usuario); // Verifica existencia
@@ -175,7 +151,6 @@ export class UserService {
             relations: ['userRoles', 'userRoles.role'],
         });
         if (!user) throw new NotFoundException(`Usuario con ID ${id_usuario} no encontrado`);
->>>>>>> Backend-andy
         return user;
     }
 
@@ -189,20 +164,19 @@ export class UserService {
         await this.getUserRepo().update(id_usuario, userUpdate);
         return this.getUserById(id_usuario);
     }
-<<<<<<< HEAD
 
     // Bloquear usuario (HU-F10, HU-F14)
     async blockUser(id_usuario: number): Promise<User> {
         const user = await this.getUserById(id_usuario);
-        user.activo = false;
-        return await this.getRepository().save(user);
+        user.accountStatus = 'bloqueado';
+        return await this.getUserRepo().save(user);
     }
 
     // Desbloquear usuario
     async unblockUser(id_usuario: number): Promise<User> {
         const user = await this.getUserById(id_usuario);
-        user.activo = true;
-        return await this.getRepository().save(user);
+        user.accountStatus = 'activo';
+        return await this.getUserRepo().save(user);
     }
 
     // Verificar si usuario puede realizar compras (no bloqueado y sin penalizaciones activas)
@@ -210,30 +184,35 @@ export class UserService {
         const user = await this.getUserById(id_usuario);
         const hasActivePenalty = await userPenaltyService.userHasActivePenalty(id_usuario);
         
-        return user.activo && !hasActivePenalty;
+        return user.accountStatus === 'activo' && !hasActivePenalty;
     }
 
     // Cambiar contraseña
     async changePassword(id_usuario: number, newPassword: string): Promise<User> {
         const user = await this.getUserById(id_usuario);
-        user.password = newPassword; // En producción, asegúrate de hashear la contraseña
-        return await this.getRepository().save(user);
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(newPassword, salt);
+        user.password = hashedPassword;
+        return await this.getUserRepo().save(user);
     }
 
     // Obtener usuarios bloqueados
     async getBlockedUsers(): Promise<User[]> {
-        return await this.getRepository().find({
-            where: { activo: false },
-            relations: ['sanciones']
+        return await this.getUserRepo().find({
+            where: { accountStatus: 'bloqueado' },
+            relations: ['penalties']
         });
     }
 
     // Obtener usuarios con penalizaciones activas
     async getUsersWithActivePenalties(userPenaltyService: any): Promise<User[]> {
-        const allUsers = await this.getAllUsers();
+        const users = await this.getUserRepo().find({
+            relations: ['penalties', 'userRoles', 'userRoles.role']
+        });
+        
         const usersWithPenalties: User[] = [];
 
-        for (const user of allUsers) {
+        for (const user of users) {
             const hasActivePenalty = await userPenaltyService.userHasActivePenalty(user.id_usuario);
             if (hasActivePenalty) {
                 usersWithPenalties.push(user);
@@ -244,18 +223,18 @@ export class UserService {
     }
 
     async getUserByEmail(email: string): Promise<User | null> {
-        return await this.getRepository().findOne({
+        return await this.getUserRepo().findOne({
             where: { email },
-            relations: ['userRoles', 'userRoles.rol']
+            relations: ['userRoles', 'userRoles.role']
         });
     }
 
     async validateUser(email: string, password: string): Promise<User | null> {
-        
         try {
-            const user = await this.getUserByEmail(email);
-            // En producción, comparar con contraseña hasheada
-            if (user && user.password === password && user.activo) {
+            const user = await this.findByEmailForAuth(email);
+            
+            if (user && await bcrypt.compare(password, user.password) && user.accountStatus === 'activo') {
+                delete (user as any).password;
                 return user;
             }
             return null;
@@ -263,7 +242,17 @@ export class UserService {
             return null;
         }
     }
+
+    // Método para verificar si un usuario está activo
+    async isUserActive(id_usuario: number): Promise<boolean> {
+        const user = await this.findOne(id_usuario);
+        return user.accountStatus === 'activo';
+    }
+
+    // Método para cambiar el estado de la cuenta
+    async changeAccountStatus(id_usuario: number, status: string): Promise<User> {
+        const user = await this.getUserById(id_usuario);
+        user.accountStatus = status;
+        return await this.getUserRepo().save(user);
+    }
 }
-=======
-}
->>>>>>> Backend-andy

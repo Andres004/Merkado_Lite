@@ -14,8 +14,4 @@ export class Category {
 
     @OneToMany(() => ProductCategory, (pc) => pc.categoria)
     productCategories: ProductCategory[];
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> Backend-andy

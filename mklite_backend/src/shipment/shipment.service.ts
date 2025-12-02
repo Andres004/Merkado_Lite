@@ -1,10 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from "@nestjs/common";
 import { AppDataSource } from "src/data-source"; 
-<<<<<<< HEAD
-import { IsNull, Repository } from "typeorm";
-=======
-import { Repository } from "typeorm";
->>>>>>> Backend-andy
+import { Repository, IsNull } from "typeorm";
 import { Shipment } from "src/entity/shipment.entity"; 
 import { OrderService } from "../order/order.service"; // Importar el servicio refactorizado
 
@@ -71,7 +67,6 @@ export class ShipmentService {
         if (!shipment) throw new NotFoundException(`Envío ID ${id_envio} no encontrado`);
         return shipment; //shipment
     }
-<<<<<<< HEAD
 
     // Actualizar estado de envio
     async updateShipmentStatus(id_envio: number, nuevoEstado: string): Promise<Shipment> {
@@ -176,6 +171,3 @@ export class ShipmentService {
         return await this.getRepository().save(shipment);
     }
 }
-=======
-}
->>>>>>> Backend-andy

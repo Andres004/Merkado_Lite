@@ -5,13 +5,8 @@ import { StockAlert } from './stockalert.entity';
 import { Batch } from './batch.entity';
 import { ProductCategory } from './productcategory.entity';
 import { OrderItem } from './orderitem.entity';
-<<<<<<< HEAD
-import { RefundItem } from './refundItem.entity';
-import { DiscountProduct } from './discountProduct.entity';
-=======
 import { RefundItem } from './refunditem.entity';
 import { DiscountProduct } from './discountproduct.entity'; // <--- NUEVO IMPORT
->>>>>>> Backend-andy
 
 @Entity('producto') 
 export class Product {
@@ -53,8 +48,4 @@ export class Product {
     
     @OneToMany(() => DiscountProduct, (dp) => dp.product)
     discountProducts: DiscountProduct[];
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> Backend-andy

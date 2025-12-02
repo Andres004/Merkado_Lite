@@ -1,9 +1,3 @@
-<<<<<<< HEAD
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany, ManyToMany, JoinTable } from 'typeorm';
-import { Cart } from './cart.entity';
-import { UserRole } from './userrole.entity';
-import { UserPenalty } from './userpenalty.entity';
-=======
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany, CreateDateColumn } from 'typeorm';
 import { Cart } from './cart.entity';
 import { UserRole } from './userrole.entity';
@@ -12,7 +6,6 @@ import { Message } from './message.entity';
 import { Order } from './order.entity';
 import { Refund } from './refund.entity';
 import { UserPenalty } from './userpenalty.entity'; 
->>>>>>> Backend-andy
 
 @Entity('usuario')
 export class User {
@@ -40,12 +33,6 @@ export class User {
     @Column({ length: 255, nullable: true })
     direccion: string;
 
-<<<<<<< HEAD
-    @Column()
-    activo: boolean; // En caso de estar o no bloqueado el usuario
-
-    @OneToMany(() => UserRole, (userrole) => userrole.usuario)
-=======
     @Column({ name: 'estado_cuenta', length: 20, default: 'activo' })
     accountStatus: string; 
 
@@ -56,18 +43,11 @@ export class User {
     fechaRegistro: Date;
 
     @OneToMany(() => UserRole, (userrole) => userrole.user)
->>>>>>> Backend-andy
     userRoles: UserRole[];
 
     @OneToMany(() => Cart, (cart) => cart.user)
     carts: Cart[];
 
-<<<<<<< HEAD
-    @OneToMany(() => UserPenalty, (userPenalty) => userPenalty.usuario)
-    sanciones: UserPenalty[];
-
-}
-=======
     @OneToMany(() => Chat, (chat) => chat.client)
     chatsAsClient: Chat[];
 
@@ -86,4 +66,3 @@ export class User {
     @OneToMany(() => UserPenalty, (penalty) => penalty.user)
     penalties: UserPenalty[];
 }
->>>>>>> Backend-andy

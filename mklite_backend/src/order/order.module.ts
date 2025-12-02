@@ -14,8 +14,4 @@ import { InventoryModule } from "../inventory/inventory.module";
     providers: [OrderService],
     exports: [OrderService] 
 })
-<<<<<<< HEAD
 export class OrderModule {}
-=======
-export class OrderModule {}
->>>>>>> Backend-andy

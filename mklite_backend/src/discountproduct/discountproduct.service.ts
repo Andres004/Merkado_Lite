@@ -1,10 +1,6 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { Repository } from 'typeorm';
-<<<<<<< HEAD:mklite_backend/src/discountProduct/discountProduct.service.ts
-import { DiscountProduct } from 'src/entity/discountProduct.entity';
-=======
 import { DiscountProduct } from 'src/entity/discountproduct.entity';
->>>>>>> Backend-andy:mklite_backend/src/discountproduct/discountproduct.service.ts
 import { AppDataSource } from 'src/data-source';
 
 @Injectable()

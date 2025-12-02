@@ -1,10 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { Product } from './product.entity'; // Ajusta la ruta
-<<<<<<< HEAD
-import { Supplier } from './supplier.entity';
-=======
 import { Supplier } from './supplier.entity'; // Ajusta la ruta
->>>>>>> Backend-andy
 
 @Entity('lote')
 export class Batch {

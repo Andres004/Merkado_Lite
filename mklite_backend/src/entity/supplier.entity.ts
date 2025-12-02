@@ -20,8 +20,4 @@ export class Supplier {
 
     @OneToMany(() => Batch, (batch) => batch.supplier)
     batches: Batch[];
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> Backend-andy

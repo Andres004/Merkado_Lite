@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Put, Delete, Param, Body, ParseIntPipe } from '@nestjs/common';
 import { RefundItemService } from './refunditem.service';
-import { RefundItem } from '../entity/refunditem.entity';
+import { RefundItem } from 'src/entity/refunditem.entity';
 
 @Controller('refundItems')
 export class RefundItemController {

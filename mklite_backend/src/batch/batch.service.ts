@@ -19,10 +19,6 @@ export class BatchService {
         this.batchRepository = AppDataSource.getRepository(Batch);
     }
 
-<<<<<<< HEAD
-    // Crea un nuevo lote y actualiza el inventario global
-=======
->>>>>>> Backend-andy
     async createBatch(batch: Batch): Promise<Batch> {
         if (batch.cantidad_disponible === undefined) {
             batch.cantidad_disponible = batch.cantidad_inicial;
@@ -37,44 +33,24 @@ export class BatchService {
         return newBatch;
     }
 
-<<<<<<< HEAD
-    // Obtiene todos los lotes registrados
-=======
->>>>>>> Backend-andy
     async getAllBatches(): Promise<Batch[]> {
         return await this.batchRepository.find({ relations: ['product', 'supplier'] });
     }
 
-<<<<<<< HEAD
-    // Busca un lote específico por ID
-=======
->>>>>>> Backend-andy
     async getBatchById(id_lote: number): Promise<Batch> {
         const batch = await this.batchRepository.findOne({ where: { id_lote }, relations: ['product', 'supplier'] });
         if (!batch) throw new NotFoundException(`Lote ${id_lote} no encontrado`);
         return batch;
     }
 
-<<<<<<< HEAD
-    // Obtiene los lotes asociados a un producto
-=======
->>>>>>> Backend-andy
     async getBatchesByProduct(id_producto: number): Promise<Batch[]> {
         return await this.batchRepository.find({ where: { id_producto }, relations: ['supplier'], order: { fecha_vencimiento: 'ASC' } });
     }
 
-<<<<<<< HEAD
-    // Obtiene los lotes asociados a un proveedor
-=======
->>>>>>> Backend-andy
     async getBatchesBySupplier(id_proveedor: number): Promise<Batch[]> {
         return await this.batchRepository.find({ where: { id_proveedor }, relations: ['product'], order: { fecha_recepcion: 'DESC' } });
     }
 
-<<<<<<< HEAD
-    // Actualiza un lote y sincroniza el inventario si cambian cantidades o estados
-=======
->>>>>>> Backend-andy
     async updateBatch(id_lote: number, updateData: Partial<Batch>): Promise<Batch> {
         const updateResult = await this.batchRepository.update(id_lote, updateData);
         if (updateResult.affected === 0) throw new NotFoundException(`Lote ${id_lote} no encontrado`);
@@ -87,10 +63,6 @@ export class BatchService {
         return updatedBatch;
     }
 
-<<<<<<< HEAD
-    // Elimina un lote y recalcula el inventario del producto
-=======
->>>>>>> Backend-andy
     async deleteBatch(id_lote: number): Promise<{ message: string }> {
         const batch = await this.getBatchById(id_lote); 
         const deleteResult = await this.batchRepository.delete(id_lote);
@@ -102,10 +74,6 @@ export class BatchService {
         return { message: `Lote ${id_lote} eliminado con éxito` };
     }
 
-<<<<<<< HEAD
-    // Calcula totales por estado, actualiza inventario y genera alertas
-=======
->>>>>>> Backend-andy
     private async syncInventoryStock(id_producto: number) {
         const activeSum = await this.batchRepository.sum('cantidad_disponible', { 
             id_producto: id_producto,
@@ -155,10 +123,6 @@ export class BatchService {
         }
     }
 
-<<<<<<< HEAD
-    // Determina que lotes usar para una venta priorizando fecha de vencimiento (FIFO)
-=======
->>>>>>> Backend-andy
     async getBatchesForSale(id_producto: number, cantidadRequerida: number): Promise<any[]> {
         const batches = await this.batchRepository.find({
             where: { 
@@ -196,10 +160,6 @@ export class BatchService {
         return asignacion;
     }
 
-<<<<<<< HEAD
-    // Reduce el stock de un lote especifico dentro de una transaccion
-=======
->>>>>>> Backend-andy
     async reduceBatchStock(id_lote: number, cantidad: number, manager: EntityManager) {
         const batch = await manager.findOne(Batch, { where: { id_lote } });
         
@@ -213,9 +173,6 @@ export class BatchService {
 
         await manager.save(batch);
     }
-<<<<<<< HEAD
-}
-=======
 
     async restoreBatchStock(id_lote: number, cantidad: number, manager: EntityManager) {
         const batch = await manager.findOne(Batch, { where: { id_lote } });
@@ -231,4 +188,3 @@ export class BatchService {
         }
     }
 }
->>>>>>> Backend-andy

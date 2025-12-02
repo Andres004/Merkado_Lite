@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Delete, Param, Body, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Param, Body, ParseIntPipe, HttpCode, HttpStatus } from '@nestjs/common';
 import { DiscountProductService } from './discountproduct.service';
 import { DiscountProduct } from 'src/entity/discountproduct.entity';
 

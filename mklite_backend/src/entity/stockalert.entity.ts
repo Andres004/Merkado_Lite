@@ -21,8 +21,4 @@ export class StockAlert {
     @ManyToOne(() => Product, (product) => product.stockAlerts, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'id_producto', referencedColumnName: 'id_producto' })
     product: Product;
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> Backend-andy
