@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, Put } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, ParseIntPipe } from '@nestjs/common';
 import { Discount } from 'src/entity/discount.entity';
 import { DiscountService } from './discount.service';
 
@@ -17,18 +17,22 @@ export class DiscountController {
   }
 
   @Get('/:id_descuento')
-  async getDiscountById(@Param('id_descuento') id_descuento: string) {
-    return await this.discountService.getDiscountById(Number(id_descuento));
+  async getDiscountById(@Param('id_descuento', ParseIntPipe) id_descuento: number) {
+    return await this.discountService.getDiscountById(id_descuento);
+  }
+
+  @Get('/code/:code')
+  async getDiscountByCode(@Param('code') code: string) {
+    return await this.discountService.getDiscountByCode(code);
   }
 
   @Put('/:id_descuento')
-  async updateDiscount(@Param('id_descuento') id_descuento: string, @Body() updateData: Partial<Discount>) {
-    return await this.discountService.updateDiscount(Number(id_descuento), updateData);
+  async updateDiscount(@Param('id_descuento', ParseIntPipe) id_descuento: number, @Body() updateData: Partial<Discount>) {
+    return await this.discountService.updateDiscount(id_descuento, updateData);
   }
 
   @Delete('/:id_descuento')
-  async deleteDiscount(@Param('id_descuento') id_descuento: string) {
-    return await this.discountService.deleteDiscount(Number(id_descuento));
+  async deleteDiscount(@Param('id_descuento', ParseIntPipe) id_descuento: number) {
+    return await this.discountService.deleteDiscount(id_descuento);
   }
-  
 }

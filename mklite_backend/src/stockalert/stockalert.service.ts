@@ -43,4 +43,8 @@ export class StockAlertService {
         }
         return { message: `Alerta ${id_alerta} eliminada con éxito` };
     }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> Backend-andy

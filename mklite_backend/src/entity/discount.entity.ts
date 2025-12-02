@@ -1,5 +1,9 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+<<<<<<< HEAD
 import { DiscountProduct } from './discountProduct.entity';
+=======
+import { DiscountProduct } from './discountproduct.entity';
+>>>>>>> Backend-andy
 
 @Entity('descuento')
 export class Discount {
@@ -27,4 +31,8 @@ export class Discount {
     // Relación inversa necesaria
     @OneToMany(() => DiscountProduct, (dp) => dp.discount)
     discountProducts: DiscountProduct[];
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> Backend-andy

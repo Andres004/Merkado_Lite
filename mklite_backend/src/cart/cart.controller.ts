@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, Put } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, ParseIntPipe } from '@nestjs/common';
 import { Cart } from 'src/entity/cart.entity';
 import { CartService } from './cart.service';
 
@@ -17,23 +17,22 @@ export class CartController {
   }
 
   @Get('/:id_carrito')
-  async getCartById(@Param('id_carrito') id_carrito: string) {
-    return await this.cartService.getCartById(Number(id_carrito));
+  async getCartById(@Param('id_carrito', ParseIntPipe) id_carrito: number) {
+    return await this.cartService.getCartById(id_carrito);
   }
 
   @Put('/:id_carrito')
-  async updateCart(@Param('id_carrito') id_carrito: string, @Body() updateData: Partial<Cart>) {
-    return await this.cartService.updateCart(Number(id_carrito), updateData);
+  async updateCart(@Param('id_carrito', ParseIntPipe) id_carrito: number, @Body() updateData: Partial<Cart>) {
+    return await this.cartService.updateCart(id_carrito, updateData);
   }
 
   @Delete('/:id_carrito')
-  async deleteCart(@Param('id_carrito') id_carrito: string) {
-    return await this.cartService.deleteCart(Number(id_carrito));
+  async deleteCart(@Param('id_carrito', ParseIntPipe) id_carrito: number) {
+    return await this.cartService.deleteCart(id_carrito);
   }
 
-  // Opcional: Obtener carritos por usuario
   @Get('/user/:id_usuario')
-  async getCartsByUserId(@Param('id_usuario') id_usuario: string) {
-    return await this.cartService.getCartsByUserId(Number(id_usuario));
+  async getCartsByUserId(@Param('id_usuario', ParseIntPipe) id_usuario: number) {
+    return await this.cartService.getCartsByUserId(id_usuario);
   }
 }

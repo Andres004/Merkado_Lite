@@ -2,7 +2,7 @@ import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 't
 import { User } from './user.entity';
 import { Shipment } from './shipment.entity';
 
-@Entity('user_penalty')
+@Entity('sancion_usuario')
 export class UserPenalty {
     @PrimaryGeneratedColumn()
     id_sancion: number;
@@ -13,24 +13,23 @@ export class UserPenalty {
     @Column()
     id_envio: number;
 
-    @Column({ type: 'text', nullable: true })
+    @Column({ type: 'text' })
     motivo: string;
 
-    @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+    @Column({ type: 'datetime' })
     fecha_inicio: Date;
 
-    @Column({ type: 'timestamp', nullable: true })
+    @Column({ type: 'datetime' })
     fecha_fin: Date;
 
-    @Column({ type: 'varchar', length: 20, default: 'ACTIVA' })
-    estado: string;
+    @Column({ length: 20 })
+    estado: string; 
 
-    // Relaciones corregidas
-    @ManyToOne(() => User, (user) => user.sanciones)
+    @ManyToOne(() => User, (user) => user.penalties)
     @JoinColumn({ name: 'id_usuario' })
-    usuario: User;
+    user: User;
 
-    @ManyToOne(() => Shipment, (shipment) => shipment.sanciones)
+    @ManyToOne(() => Shipment, (shipment) => shipment.penalties)
     @JoinColumn({ name: 'id_envio' })
-    envio: Shipment;
+    shipment: Shipment;
 }

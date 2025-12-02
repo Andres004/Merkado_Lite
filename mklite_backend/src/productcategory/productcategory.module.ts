@@ -6,5 +6,9 @@ import { ProductCategoryController } from "./productcategory.controller";
     imports: [],
     controllers: [ProductCategoryController],
     providers: [ProductCategoryService],
+<<<<<<< HEAD
+=======
+    exports: [ProductCategoryService],
+>>>>>>> Backend-andy
 })
 export class ProductCategoryModule {}

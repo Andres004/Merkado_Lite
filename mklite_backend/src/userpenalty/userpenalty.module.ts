@@ -3,7 +3,10 @@ import { UserPenaltyService } from './userpenalty.service';
 import { UserPenaltyController } from './userpenalty.controller';
 
 @Module({
+<<<<<<< HEAD
   imports: [],
+=======
+>>>>>>> Backend-andy
   controllers: [UserPenaltyController],
   providers: [UserPenaltyService],
 })

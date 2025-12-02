@@ -16,24 +16,6 @@ export class RefundController {
     return await this.refundService.findAll();
   }
 
-  /*@Get('vendedor/:vendedorId')
-  async findByVendedorId(@Param('vendedorId', ParseIntPipe) vendedorId: number): Promise<Refund[]> {
-    return await this.refundService.findByVendedorId(vendedorId);
-  }
-
-  @Get('pedido/:pedidoId')
-  async findByPedidoId(@Param('pedidoId', ParseIntPipe) pedidoId: number): Promise<Refund[]> {
-    return await this.refundService.findByPedidoId(pedidoId);
-  }
-
-  @Get('pedido/:pedidoId/vendedor/:vendedorId')
-  async getRefundsByPedidoAndVendedor(
-    @Param('pedidoId', ParseIntPipe) pedidoId: number,
-    @Param('vendedorId', ParseIntPipe) vendedorId: number,
-  ): Promise<Refund[]> {
-    return await this.refundService.getRefundsByPedidoAndVendedor(pedidoId, vendedorId);
-  }*/
-
   @Get('vendedor/:vendedorId/total')
   async getTotalByVendedorId(@Param('vendedorId', ParseIntPipe) vendedorId: number): Promise<{ total: number }> {
     const total = await this.refundService.getTotalRefundsByVendedor(vendedorId);

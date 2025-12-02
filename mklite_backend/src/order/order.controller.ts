@@ -44,4 +44,12 @@ export class OrderController {
     ) {
         return this.orderService.updateOrderState(id_pedido, dto.estado);
     }
+<<<<<<< HEAD
+=======
+
+    @Patch('/:id_pedido/cancel')
+    async cancelOrder(@Param('id_pedido', ParseIntPipe) id_pedido: number) {
+        return this.orderService.cancelOrder(id_pedido);
+    }
+>>>>>>> Backend-andy
 }

@@ -1,4 +1,4 @@
-.user_page {
+/*.user_page {
     background-color: gray;
     width: 100%;
 }
@@ -54,4 +54,23 @@
     background-color: white;
     border-width: 3px;
     border-color: red;
+}*/
+
+
+/* mklite_frontend/app/user/user.module.css */
+
+/* Define un borde doble o complejo usando box-shadow, 
+   que es más fácil de mantener aquí que en clases de Tailwind */
+.authContainerBorder {
+    box-shadow: 
+        0 0 0 4px #E60023, /* Borde interior rojo (Rojo Coca-Cola) */
+        0 0 0 8px #ffffff; /* Borde exterior blanco */
+    border-radius: 10px;
+    transition: all 0.3s ease-in-out;
+}
+
+/* Podemos definir un estilo de input especial que sea más que un simple 'border' */
+.customInputFocus:focus {
+    border-color: #E60023 !important; /* Enfocamos el borde con el Rojo Coca-Cola */
+    box-shadow: 0 0 0 1px #E60023;
 }
