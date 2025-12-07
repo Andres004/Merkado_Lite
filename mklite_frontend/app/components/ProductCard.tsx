@@ -50,6 +50,7 @@ const ProductCard = ({ product }: { product: ProductModel }) => {
               fill
               style={{ objectFit: 'contain' }}
               className="group-hover:scale-105 transition-transform duration-300"
+              unoptimized={true}
             />
         </Link>
       </div>

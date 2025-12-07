@@ -34,11 +34,12 @@ const OfferBanner = () => {
           </p>
           
           {/* Botón de Ofertas */}
-          <Link href="/ofertas" passHref legacyBehavior>
-            <button className="bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-8 rounded-md shadow-lg transition duration-150">
-              Ver ofertas
-            </button>
-          </Link>
+          <Link 
+          href="/ofertas" 
+          className="bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-8 rounded-md shadow-lg transition duration-300"
+          >
+          Ver ofertas
+        </Link>
         </div>
 
       </div>

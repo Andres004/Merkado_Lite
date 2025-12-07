@@ -1,66 +1,45 @@
-{/*
-    import api from '../utils/axios';
-import { CartItem } from '../context/CartContext'; // O la interfaz que prefieras
+import { instance } from "../utils/axios";
 
-// 1. AÑADIR ÍTEM (Llama a tu CartItemController)
-export const addItemToCartAPI = async (id_usuario: number, id_producto: number, cantidad: number) => {
-    try {
-        // Tu endpoint es: POST /cartitem/add
-        // Tu Body espera: { id_usuario, id_producto, cantidad }
-        const response = await api.post('/cartitem/add', {
-            id_usuario,
-            id_producto,
-            cantidad
-        });
-        return response.data;
-    } catch (error) {
-        console.error("Error agregando al carrito:", error);
-        throw error;
-    }
+export interface AddToCartDto {
+  id_usuario: number;
+  id_producto: number;
+  cantidad: number;
+}
+
+// Agregar item (Ya lo tenías)
+export const addToCartService = async (data: AddToCartDto) => {
+  const response = await instance.post('/cartitem/add', data);
+  // Emitimos un evento para que el Header se entere y actualice el número
+  window.dispatchEvent(new Event("cartUpdated")); 
+  return response.data;
 };
 
-// 2. OBTENER MI CARRITO (Llama a CartController)
-export const getMyCartAPI = async (id_usuario: number) => {
-    try {
-        // Tu endpoint es: GET /cart/user/:id_usuario
-        const response = await api.get(`/cart/user/${id_usuario}`);
-        return response.data; // Debería devolver una lista de carritos o el activo
-    } catch (error) {
-        console.error("Error obteniendo carrito:", error);
-        return null;
-    }
-}; */}
-
-
-import api from '../utils/axios';
-
-// 1. AÑADIR ÍTEM (Conecta con tu CartItemController)
-export const addItemToCartAPI = async (id_usuario: number, id_producto: number, cantidad: number) => {
-    try {
-        // Tu backend espera: { id_usuario, id_producto, cantidad }
-        // Endpoint según tu código: POST /cartitem/add
-        const response = await api.post('/cartitem/add', {
-            id_usuario,
-            id_producto,
-            cantidad
-        });
-        return response.data;
-    } catch (error) {
-        console.error("Error al añadir al carrito:", error);
-        throw error;
-    }
+// Obtener el carrito activo del usuario
+export const getCartByUserService = async (id_usuario: number) => {
+  // El backend devuelve un array de carritos, buscamos el activo
+  const response = await instance.get(`/cart/user/${id_usuario}`);
+  const carts = response.data;
+  // Filtramos el que tiene estado: true
+  const activeCart = carts.find((c: any) => c.estado === true);
+  
+  // Si encontramos el activo, pedimos sus detalles completos (con totales)
+  if (activeCart) {
+      const detailResponse = await instance.get(`/cart/${activeCart.id_carrito}`);
+      return detailResponse.data;
+  }
+  return null;
 };
 
-// 2. OBTENER CARRITO (Conecta con tu CartController)
-export const getMyCartAPI = async (id_usuario: number) => {
-    try {
-        // Endpoint según tu código: GET /cart/user/:id_usuario
-        const response = await api.get(`/cart/user/${id_usuario}`);
-        // Tu backend devuelve una lista de carritos, tomamos el último o el activo
-        // Si devuelve un array, tomamos el primero (response.data[0])
-        return Array.isArray(response.data) ? response.data[0] : response.data;
-    } catch (error) {
-        console.error("Error obteniendo carrito:", error);
-        return null;
-    }
+// Actualizar cantidad de un item
+export const updateCartItemService = async (id_carrito: number, id_producto: number, cantidad: number) => {
+  const response = await instance.put(`/cartitem/${id_carrito}/${id_producto}`, { cantidad });
+  window.dispatchEvent(new Event("cartUpdated")); 
+  return response.data;
+};
+
+// Eliminar un item
+export const deleteCartItemService = async (id_carrito: number, id_producto: number) => {
+  const response = await instance.delete(`/cartitem/${id_carrito}/${id_producto}`);
+  window.dispatchEvent(new Event("cartUpdated")); 
+  return response.data;
 };

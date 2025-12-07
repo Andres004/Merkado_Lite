@@ -14,7 +14,7 @@ export class Order {
 
     @Column({ length: 20 })
     tipo_pedido: string; 
-
+//modificacion del requerimiento del magister
     @Column({ length: 20 })
     metodo_pago: string; 
 

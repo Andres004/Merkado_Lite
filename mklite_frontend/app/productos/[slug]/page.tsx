@@ -5,8 +5,10 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Home, Minus, Plus, Heart, ShoppingCart, ChevronRight } from 'lucide-react';
 
-// 1. IMPORTAMOS LOS SERVICIOS Y MODELOS
+// IMPORTACIONES DE SERVICIOS Y MODELOS
+// Asegúrate de que estas rutas sean correctas según tu estructura de carpetas
 import { getProductById, getProductsByCategoryId } from '../../services/product.service';
+import { addToCartService } from '../../services/cart.service'; // <--- NUEVO SERVICIO
 import { ProductModel } from '../../models/product.model';
 import ProductCard from '../../components/ProductCard';
 
@@ -15,19 +17,16 @@ import { useCart } from '../../context/CartContext';
 
 export default function ProductDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   
-  // 3. DESEMPAQUETAMOS EL ID DE LA URL
+  // 1. DESEMPAQUETAMOS EL ID DE LA URL
   const { slug } = use(params);
   
-  // 4. USAMOS EL HOOK DEL CARRITO
-  const { addToCart } = useCart();
-
   // Estados
   const [product, setProduct] = useState<ProductModel | null>(null);
   const [relatedProducts, setRelatedProducts] = useState<ProductModel[]>([]);
   const [loading, setLoading] = useState(true);
-  const [qty, setQty] = useState(1); // Cantidad seleccionada
+  const [qty, setQty] = useState(1); // Estado para la cantidad a comprar
 
-  // 5. CARGAMOS DATOS DEL BACKEND
+  // 2. CARGA DE DATOS
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -45,6 +44,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
 
             if (categoryId) {
                 const related = await getProductsByCategoryId(categoryId);
+                // Filtramos para no mostrar el mismo producto y limitamos a 4
                 const filteredRelated = related
                     .filter(p => p.id_producto !== productId)
                     .slice(0, 4);
@@ -61,12 +61,39 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
     loadData();
   }, [slug]);
 
-  // Reiniciar cantidad al cambiar de producto
-  useEffect(() => {
-    setQty(1);
-  }, [slug]);
+  // 3. FUNCIÓN PARA AGREGAR AL CARRITO
+  const handleAddToCart = async () => {
+    // Verificar si hay usuario logueado en el navegador
+    const storedUser = localStorage.getItem('userData');
+    
+    if (!storedUser) {
+      alert('Debes iniciar sesión para comprar.');
+      return;
+    }
 
-  // PANTALLA DE CARGA
+    const user = JSON.parse(storedUser);
+
+    if (!product) return;
+
+    try {
+      // Llamar al backend
+      await addToCartService({
+        id_usuario: user.id_usuario,
+        id_producto: product.id_producto,
+        cantidad: qty // Usamos la cantidad del estado
+      });
+      
+      alert(`¡${qty} ${product.nombre}(s) agregado(s) al carrito!`);
+      
+    } catch (error: any) {
+      console.error(error);
+      // Manejo de errores del backend (ej: Stock insuficiente)
+      const msg = error.response?.data?.message || 'Error al agregar al carrito';
+      alert(msg);
+    }
+  };
+
+  // 4. PANTALLA DE CARGA
   if (loading) {
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -78,6 +105,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
     );
   }
 
+  // 5. PANTALLA NO ENCONTRADO
   if (!product) {
     return (
         <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
@@ -87,13 +115,13 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
     );
   }
 
-  // NOMBRE DE CATEGORÍA SEGURO
+  // 6. RENDERIZADO DE LA UI
   const categoryName = product.productCategories?.[0]?.categoria?.nombre || "General";
 
   return (
     <div className="bg-gray-50 pb-16 min-h-screen">
     
-      {/* HEADER / BREADCRUMBS ESTILO BLACK */}
+      {/* HEADER / BREADCRUMBS */}
       <div className="relative bg-black border-b border-gray-800 shadow-md">
         <div className="max-w-7xl mx-auto px-4 py-12 relative z-10">
             <div className="flex items-center text-lg text-gray-300">
@@ -151,11 +179,10 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
                 <span className="text-3xl font-bold text-gray-800">
                     Bs. {product.precio_venta}
                 </span>
-                <span className="text-sm text-gray-500">/ unidad</span>
             </div>
 
             {/* Descripción */}
-            <p className="text-gray-600 leading-relaxed">{product.descripcion}</p>
+            <p className="text-gray-600">{product.descripcion}</p>
             
             <div className='flex items-center space-x-2'>
                 <span className='text-sm text-gray-500'>Categoría:</span>
@@ -182,23 +209,18 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
                 </button>
               </div>
 
-              {/* 🔴 BOTÓN AÑADIR (Funcionalidad + Tu Diseño Rojo) */}
+              {/* Botón Añadir al Carrito CONECTADO AL BACKEND */}
               <button 
-                    onClick={() => {
-                        // 1. Agregar al carrito (Visual + BD)
-                        addToCart(product, qty);
-                        // 2. Reiniciar cantidad (Opcional)
-                        setQty(1);
-                    }}
-                    className="flex-1 px-8 py-4 rounded-lg shadow-lg transition-all duration-200 flex items-center justify-center space-x-2 text-lg font-bold bg-[#F40009] hover:bg-red-700 text-white hover:scale-[1.02] active:scale-95"
-                >
-                    <ShoppingCart size={22} />
-                    <span>Añadir al Carrito</span>
-                </button>
+                onClick={handleAddToCart}
+                className="flex-1 bg-green-500 hover:bg-green-600 text-white font-semibold py-3 rounded-md shadow-md transition duration-150 flex items-center justify-center space-x-2"
+              >
+                <ShoppingCart size={20} />
+                <span>Añadir al Carrito</span>
+              </button>
 
-              {/* Botón de Favoritos */}
-              <button className="p-4 border border-gray-300 rounded-md text-gray-400 hover:bg-red-50 hover:text-[#F40009] hover:border-red-200 transition shadow-sm">
-                <Heart size={22} />
+              {/* Botón de Favoritos (Visual) */}
+              <button className="p-3 border border-gray-300 rounded-md text-gray-700 hover:bg-red-50 hover:text-red-600 transition">
+                <Heart size={20} />
               </button>
             </div>
           </div>
