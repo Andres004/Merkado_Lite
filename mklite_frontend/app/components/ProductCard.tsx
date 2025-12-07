@@ -3,24 +3,19 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { ShoppingCart, Heart, Eye } from 'lucide-react';
 import { ProductModel } from '../models/product.model';
+import { useCart } from '../context/CartContext';
 
 const ProductCard = ({ product }: { product: ProductModel }) => {
   
-  // -------------------------------------------------------
-  // LÓGICA DE DESCUENTO (Adaptada a tu BD actual)
-  // -------------------------------------------------------
-  // Como tu base de datos actual (MySQL) aún no tiene campos de "oferta",
-  // he dejado esta lógica preparada. Si en el futuro agregas 'precio_antiguo'
-  // a tu tabla, descomenta y ajusta esto.
-  
-  const oldPrice = undefined; // product.precio_antiguo (Si existiera en BD)
+  const oldPrice = undefined; // product.precio_antiguo
   const discountPercent = 0;  // Calculo automático si tuvieras oldPrice
   const isDiscounted = false; // Cambiar a: oldPrice && oldPrice > product.precio_venta;
+  const { addToCart } = useCart();
 
   return (
     <div className="bg-white p-4 shadow-sm border border-gray-100 rounded-lg group transition duration-300 relative overflow-hidden flex flex-col h-full hover:shadow-xl">
       
-      {/* 1. ETIQUETA DE DESCUENTO (Solo se muestra si hay descuento) */}
+      {/*  ETIQUETA DE DESCUENTO (Solo se muestra si hay descuento) */}
       {isDiscounted && (
         <span className="absolute top-0 left-0 bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-br-lg z-20">
           -{discountPercent}%
@@ -47,8 +42,7 @@ const ProductCard = ({ product }: { product: ProductModel }) => {
       {/* IMAGEN DEL PRODUCTO (Con Link al detalle) */}
       <div className="relative h-40 w-full mb-4 flex items-center justify-center bg-gray-50 rounded-md p-2">
         <Link href={`/productos/${product.id_producto}`} className="w-full h-full relative">
-            
-
+          
             <Image 
               src={product.imagen_url || '/images/placeholder.jpg'} 
               alt={product.nombre || "Imagen del producto"} 
@@ -91,10 +85,14 @@ const ProductCard = ({ product }: { product: ProductModel }) => {
             )}
           </div>
           
-          {/* BOTÓN VERDE (El que te gustaba) */}
+          {/* BOTÓN VERDE */}
+          
           <button 
+            onClick={() => {
+                console.log("Click en producto:", product.nombre);
+                addToCart(product, 1);
+            }}
             className="bg-green-500 hover:bg-green-600 text-white p-2.5 rounded-full transition duration-200 shadow-md hover:shadow-lg active:scale-95"
-            title="Agregar al carrito"
           >
             <ShoppingCart size={20} />
           </button>

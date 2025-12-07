@@ -3,25 +3,31 @@
 import React, { useEffect, useState, use } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Home, Minus, Plus, Heart, ShoppingCart,ChevronRight,Filter } from 'lucide-react';
+import { Home, Minus, Plus, Heart, ShoppingCart, ChevronRight } from 'lucide-react';
 
-// 1. IMPORTAMOS LOS SERVICIOS REALES
+// 1. IMPORTAMOS LOS SERVICIOS Y MODELOS
 import { getProductById, getProductsByCategoryId } from '../../services/product.service';
 import { ProductModel } from '../../models/product.model';
 import ProductCard from '../../components/ProductCard';
 
+// 2. IMPORTAMOS EL CONTEXTO DEL CARRITO
+import { useCart } from '../../context/CartContext';
+
 export default function ProductDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   
-  // 2. DESEMPAQUETAMOS EL ID DE LA URL
+  // 3. DESEMPAQUETAMOS EL ID DE LA URL
   const { slug } = use(params);
   
-  // Estados para los datos
+  // 4. USAMOS EL HOOK DEL CARRITO
+  const { addToCart } = useCart();
+
+  // Estados
   const [product, setProduct] = useState<ProductModel | null>(null);
   const [relatedProducts, setRelatedProducts] = useState<ProductModel[]>([]);
   const [loading, setLoading] = useState(true);
-  const [qty, setQty] = useState(1); // Estado para la cantidad
+  const [qty, setQty] = useState(1); // Cantidad seleccionada
 
-  // 3. CARGAMOS LOS DATOS (Igual que en la versión funcional)
+  // 5. CARGAMOS DATOS DEL BACKEND
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -34,7 +40,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
         setProduct(productData);
 
         if (productData) {
-            // Buscamos la categoría para los relacionados
+            // Buscamos la categoría de forma segura
             const categoryId = productData.productCategories?.[0]?.categoria?.id_categoria;
 
             if (categoryId) {
@@ -55,11 +61,19 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
     loadData();
   }, [slug]);
 
-  // 4. PANTALLA DE CARGA (Simple)
+  // Reiniciar cantidad al cambiar de producto
+  useEffect(() => {
+    setQty(1);
+  }, [slug]);
+
+  // PANTALLA DE CARGA
   if (loading) {
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50">
-            <p className="text-gray-500 animate-pulse">Cargando producto...</p>
+            <div className="flex flex-col items-center">
+                <div className="w-12 h-12 border-4 border-red-600 border-t-transparent rounded-full animate-spin mb-4"></div>
+                <p className="text-gray-500 animate-pulse">Cargando detalles...</p>
+            </div>
         </div>
     );
   }
@@ -73,18 +87,17 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
     );
   }
 
-  // 5. PREPARAMOS LOS DATOS PARA TU DISEÑO
+  // NOMBRE DE CATEGORÍA SEGURO
   const categoryName = product.productCategories?.[0]?.categoria?.nombre || "General";
 
   return (
-    <div className="bg-gray-50 pb-16">
+    <div className="bg-gray-50 pb-16 min-h-screen">
     
-      {/* HEADER / BREADCRUMBS ESTILO BLACK (Igual que en Categorías) */}
+      {/* HEADER / BREADCRUMBS ESTILO BLACK */}
       <div className="relative bg-black border-b border-gray-800 shadow-md">
         <div className="max-w-7xl mx-auto px-4 py-12 relative z-10">
             <div className="flex items-center text-lg text-gray-300">
                 
-                {/* Enlace a Casa */}
                 <Link href="/" className="flex items-center hover:text-[#F40009] transition-colors">
                     <Home size={20} className="mr-2" />
                     Casa
@@ -92,15 +105,12 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
 
                 <ChevronRight size={20} className="mx-3 text-gray-600" />
                 
-                {/*  Enlace a la Categoría del Producto */}
-                
                 <span className="hover:text-[#F40009] cursor-pointer transition-colors">
                     {categoryName}
                 </span>
                 
                 <ChevronRight size={20} className="mx-3 text-gray-600" />
                 
-                {/*  Nombre del Producto Actual  */}
                 <span className="font-bold text-[#F40009] tracking-wide line-clamp-1">
                     {product.nombre}
                 </span>
@@ -113,13 +123,13 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 bg-white p-8 rounded-lg shadow-md">
           
           {/* Columna Izquierda: Imagen */}
-          <div className="relative h-[450px] flex items-center justify-center">
+          <div className="relative h-[450px] flex items-center justify-center group">
             <Image
               src={product.imagen_url || '/images/placeholder.jpg'}
               alt={product.nombre || "Producto"}
-              width={400} 
-              height={400} 
+              fill
               style={{ objectFit: 'contain' }}
+              className="transition-transform duration-300 group-hover:scale-105"
               priority
             />
           </div>
@@ -132,23 +142,20 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
             <div className="flex items-center space-x-4 text-sm">
                 <p className="text-gray-500">COD: {product.id_producto}</p>
                 <span className="bg-green-100 text-green-700 text-xs font-semibold px-2 py-0.5 rounded-full">
-                    En stock
+                    Disponible
                 </span>
             </div>
 
             {/* Precios */}
             <div className="flex items-center space-x-4 border-b pb-4">
-                <span className="text-2xl font-bold text-gray-800">
+                <span className="text-3xl font-bold text-gray-800">
                     Bs. {product.precio_venta}
                 </span>
-                {/* si hay precio antiguo:
-                <span className="text-lg text-gray-500 line-through">Bs. 80.00</span> 
-                */}
+                <span className="text-sm text-gray-500">/ unidad</span>
             </div>
 
             {/* Descripción */}
-            <p className="text-gray-600">{product.descripcion}</p>
-            
+            <p className="text-gray-600 leading-relaxed">{product.descripcion}</p>
             
             <div className='flex items-center space-x-2'>
                 <span className='text-sm text-gray-500'>Categoría:</span>
@@ -157,32 +164,41 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
 
             {/* Cantidad y Botones */}
             <div className="flex items-center space-x-4 pt-4">
+              
               {/* Selector de Cantidad */}
               <div className="flex items-center border border-gray-300 rounded-md">
                 <button 
                     onClick={() => setQty(q => Math.max(1, q - 1))}
-                    className="p-3 hover:bg-gray-100 rounded-l-md"
+                    className="p-3 hover:bg-gray-100 rounded-l-md text-gray-600"
                 >
                     <Minus size={18} />
                 </button>
-                <span className="px-4 py-2 font-semibold text-lg">{qty}</span>
+                <span className="px-4 py-2 font-semibold text-lg w-12 text-center">{qty}</span>
                 <button 
                     onClick={() => setQty(q => q + 1)}
-                    className="p-3 hover:bg-gray-100 rounded-r-md"
+                    className="p-3 hover:bg-gray-100 rounded-r-md text-gray-600"
                 >
                     <Plus size={18} />
                 </button>
               </div>
 
-              {/* Botón Añadir al CarritoL) */}
-              <button className="flex-1 bg-green-500 hover:bg-green-600 text-white font-semibold py-3 rounded-md shadow-md transition duration-150 flex items-center justify-center space-x-2">
-                <ShoppingCart size={20} />
-                <span>Añadir al Carrito</span>
-              </button>
+              {/* 🔴 BOTÓN AÑADIR (Funcionalidad + Tu Diseño Rojo) */}
+              <button 
+                    onClick={() => {
+                        // 1. Agregar al carrito (Visual + BD)
+                        addToCart(product, qty);
+                        // 2. Reiniciar cantidad (Opcional)
+                        setQty(1);
+                    }}
+                    className="flex-1 px-8 py-4 rounded-lg shadow-lg transition-all duration-200 flex items-center justify-center space-x-2 text-lg font-bold bg-[#F40009] hover:bg-red-700 text-white hover:scale-[1.02] active:scale-95"
+                >
+                    <ShoppingCart size={22} />
+                    <span>Añadir al Carrito</span>
+                </button>
 
               {/* Botón de Favoritos */}
-              <button className="p-3 border border-gray-300 rounded-md text-gray-700 hover:bg-red-50 hover:text-red-600 transition">
-                <Heart size={20} />
+              <button className="p-4 border border-gray-300 rounded-md text-gray-400 hover:bg-red-50 hover:text-[#F40009] hover:border-red-200 transition shadow-sm">
+                <Heart size={22} />
               </button>
             </div>
           </div>
@@ -203,7 +219,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
             <p className="col-span-2 text-gray-800">{categoryName}</p>
 
             <p className="font-semibold text-gray-600">Disponibilidad:</p>
-            <p className="col-span-2 text-gray-800">Disponible</p>
+            <p className="col-span-2 text-gray-800 text-green-600 font-semibold">En Stock</p>
           
             <p className="font-semibold text-gray-600">Detalle:</p>
             <p className="col-span-2 text-gray-800 italic">

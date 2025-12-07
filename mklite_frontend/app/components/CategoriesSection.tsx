@@ -1,4 +1,3 @@
-// mklite_frontend/app/components/CategoriesSection.tsx
 
 import React from 'react';
 import Link from 'next/link';
@@ -50,15 +49,18 @@ const CategoriesSection = () => {
             <Link 
               key={index} 
               href={`/categoria/${slugify(category.name)}`}
-              className="flex flex-col items-center justify-center p-4 border border-gray-200 rounded-lg hover:shadow-lg transition duration-300 cursor-pointer h-32 bg-white"
+            
+              className="group flex flex-col items-center justify-center p-4 border border-gray-200 rounded-lg hover:shadow-xl transition duration-300 cursor-pointer h-32 bg-white hover:bg-[#F40009] hover:border-[#F40009]"
             >
               {/* Contenedor del Icono */}
               <div className="p-3 mb-2">
-                <category.icon size={32} className="text-gray-700" />
+               
+                <category.icon size={32} className="text-gray-700 transition duration-300 group-hover:text-white" />
               </div>
 
               {/* Nombre de la Categoría */}
-              <p className="text-sm text-center font-medium text-gray-700">
+              <p className="text-sm text-center font-medium text-gray-700 transition duration-300 group-hover:text-white">
+                
                 {category.name}
               </p>
             </Link>
