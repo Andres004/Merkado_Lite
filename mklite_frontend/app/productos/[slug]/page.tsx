@@ -12,9 +12,6 @@ import { addToCartService } from '../../services/cart.service'; // <--- NUEVO SE
 import { ProductModel } from '../../models/product.model';
 import ProductCard from '../../components/ProductCard';
 
-// 2. IMPORTAMOS EL CONTEXTO DEL CARRITO
-import { useCart } from '../../context/CartContext';
-
 export default function ProductDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   
   // 1. DESEMPAQUETAMOS EL ID DE LA URL
@@ -39,7 +36,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
         setProduct(productData);
 
         if (productData) {
-            // Buscamos la categoría de forma segura
+            // Buscamos la categoría para los relacionados
             const categoryId = productData.productCategories?.[0]?.categoria?.id_categoria;
 
             if (categoryId) {
@@ -97,10 +94,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
   if (loading) {
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50">
-            <div className="flex flex-col items-center">
-                <div className="w-12 h-12 border-4 border-red-600 border-t-transparent rounded-full animate-spin mb-4"></div>
-                <p className="text-gray-500 animate-pulse">Cargando detalles...</p>
-            </div>
+            <p className="text-gray-500 animate-pulse">Cargando producto...</p>
         </div>
     );
   }
@@ -119,7 +113,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
   const categoryName = product.productCategories?.[0]?.categoria?.nombre || "General";
 
   return (
-    <div className="bg-gray-50 pb-16 min-h-screen">
+    <div className="bg-gray-50 pb-16">
     
       {/* HEADER / BREADCRUMBS */}
       <div className="relative bg-black border-b border-gray-800 shadow-md">
@@ -151,13 +145,13 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 bg-white p-8 rounded-lg shadow-md">
           
           {/* Columna Izquierda: Imagen */}
-          <div className="relative h-[450px] flex items-center justify-center group">
+          <div className="relative h-[450px] flex items-center justify-center">
             <Image
               src={product.imagen_url || '/images/placeholder.jpg'}
               alt={product.nombre || "Producto"}
-              fill
+              width={400} 
+              height={400} 
               style={{ objectFit: 'contain' }}
-              className="transition-transform duration-300 group-hover:scale-105"
               priority
             />
           </div>
@@ -170,13 +164,13 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
             <div className="flex items-center space-x-4 text-sm">
                 <p className="text-gray-500">COD: {product.id_producto}</p>
                 <span className="bg-green-100 text-green-700 text-xs font-semibold px-2 py-0.5 rounded-full">
-                    Disponible
+                    En stock
                 </span>
             </div>
 
             {/* Precios */}
             <div className="flex items-center space-x-4 border-b pb-4">
-                <span className="text-3xl font-bold text-gray-800">
+                <span className="text-2xl font-bold text-gray-800">
                     Bs. {product.precio_venta}
                 </span>
             </div>
@@ -196,14 +190,14 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
               <div className="flex items-center border border-gray-300 rounded-md">
                 <button 
                     onClick={() => setQty(q => Math.max(1, q - 1))}
-                    className="p-3 hover:bg-gray-100 rounded-l-md text-gray-600"
+                    className="p-3 hover:bg-gray-100 rounded-l-md"
                 >
                     <Minus size={18} />
                 </button>
-                <span className="px-4 py-2 font-semibold text-lg w-12 text-center">{qty}</span>
+                <span className="px-4 py-2 font-semibold text-lg">{qty}</span>
                 <button 
                     onClick={() => setQty(q => q + 1)}
-                    className="p-3 hover:bg-gray-100 rounded-r-md text-gray-600"
+                    className="p-3 hover:bg-gray-100 rounded-r-md"
                 >
                     <Plus size={18} />
                 </button>
@@ -241,7 +235,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
             <p className="col-span-2 text-gray-800">{categoryName}</p>
 
             <p className="font-semibold text-gray-600">Disponibilidad:</p>
-            <p className="col-span-2 text-gray-800 text-green-600 font-semibold">En Stock</p>
+            <p className="col-span-2 text-gray-800">Disponible</p>
           
             <p className="font-semibold text-gray-600">Detalle:</p>
             <p className="col-span-2 text-gray-800 italic">

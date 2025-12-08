@@ -5,7 +5,6 @@ import "./globals.css";
 // IMPORTAMOS NUESTRO HEADER y FOOTER
 import Header from './components/Header'; 
 import Footer from './components/Footer';
-import { CartProvider } from './context/CartContext';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -28,6 +27,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
+    // AGREGADO: suppressHydrationWarning aquí también
     <html lang="es" suppressHydrationWarning={true}>
       <body
         // MANTENIDO: suppressHydrationWarning aquí
@@ -39,6 +39,5 @@ export default function RootLayout({
         <Footer />
       </body>
     </html>
-   
   );
 }
