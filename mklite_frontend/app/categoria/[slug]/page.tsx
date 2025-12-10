@@ -11,18 +11,19 @@ import { ProductModel } from '../../models/product.model';
 // MAPA DE CATEGORÍAS
 const CATEGORY_MAP: Record<string, { id: number; title: string; description: string }> = {
   'frutas-y-verduras':  { id: 1, title: 'Frutas y Verduras', description: 'Lo más fresco del campo a tu mesa.' },
-  'carnes':             { id: 10, title: 'Carnes y Embutidos', description: 'Cortes de primera calidad.' },
+  'fiambres-y-embutidos': { id: 2, title: 'Fiambres y Embutidos', description: 'Comida de calidad.' },
   'lacteos':            { id: 3, title: 'Lácteos y Huevos', description: 'Esenciales para tu desayuno.' },
   'bebidas':            { id: 4, title: 'Bebidas y Refrescos', description: 'Refresca tu día.' },
-  'snacks':             { id: 9, title: 'Snacks', description: 'Antojos y snacks para disfrutar.' },
+  'snacks':             { id: 5, title: 'Snacks', description: 'Antojos y snacks para disfrutar.' },
   'mascotas':           { id: 6, title: 'Mascotas', description: 'Lo mejor para tus amigos peludos.' },
   'panaderia':          { id: 7, title: 'Panadería', description: 'Pan fresco y horneados deliciosos.' },
-  'cuidado-del-hogar':  { id: 5, title: 'Cuidado del Hogar', description: 'Manten tu espacio sano.' },
-  'cuidado-personal':   { id: 11, title: 'Cuidado Personal', description: 'Area de cuidado integral.' },
-  'congelados':         { id: 8, title: 'Congelados', description: 'Soluciones rápidas y ricas.' },
-  'cuidado-del-bebe':   { id: 12, title: 'Cuidado del Bebé', description: 'Cuidado del pequeño del hogar.' },
-  'fiambres-y-embutidos': { id: 2, title: 'Fiambres y Embutidos', description: 'Comida de calidad.' },
+  'cuidado-del-hogar':  { id: 8, title: 'Cuidado del Hogar', description: 'Mantén tu espacio sano.' },
+  'cuidado-personal':   { id: 9, title: 'Cuidado Personal', description: 'Área de cuidado integral.' },
+  'congelados':         { id: 10, title: 'Congelados', description: 'Soluciones rápidas y ricas.' },
+  'cuidado-del-bebe':   { id: 11, title: 'Cuidado del Bebé', description: 'Cuidado del pequeño del hogar.' },
+  'carnes':             { id: 12, title: 'Carnes', description: 'Cortes de primera calidad.' },
 };
+
 
 // 2. CAMBIAMOS EL TIPO DE PARAMS A PROMISE
 export default function CategoryPage({ params }: { params: Promise<{ slug: string }> }) {
