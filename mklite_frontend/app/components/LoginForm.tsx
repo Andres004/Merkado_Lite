@@ -78,6 +78,7 @@ export default function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormPr
 'use client';
 import { useState } from 'react';
 import { loginService } from '../services/auth.service';
+import { getUserRole } from '../utils/auth';
 
 interface LoginFormProps {
   onSuccess: () => void;
@@ -99,17 +100,28 @@ export default function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormPr
     try {
       const data = await loginService(form);
 
-      // 👇 Forzamos el tipo a any para poder usar rol y userRoles sin que TS se queje
+      //  Forzamos el tipo a any para poder usar rol y userRoles sin que TS se queje
       const user: any = data.user;
+
+      // Limpiamos sesión previa para evitar datos obsoletos
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('userData');
+
+      // Sacar el rol: directo o desde relaciones por si acaso
+      const rol = getUserRole(user);
 
       // Guardar token y usuario (como viene del backend)
       localStorage.setItem('authToken', data.access_token);
       localStorage.setItem('userData', JSON.stringify(user));
 
       // Sacar el rol: directo o desde relaciones por si acaso
-      const rolDirecto = user?.rol;
-      const rolDesdeRelaciones = user?.userRoles?.[0]?.role?.nombre;
-      const rol = (rolDirecto || rolDesdeRelaciones || '').toUpperCase();
+      //const rolDirecto = user?.rol;
+      //const rolDesdeRelaciones = user?.userRoles?.[0]?.role?.nombre;
+      //const rol = (rolDirecto || rolDesdeRelaciones || '').toUpperCase();
+      // Cookies para middleware/SSR
+      const maxAgeSeconds = 60 * 60 * 24; // 24h
+      document.cookie = `authToken=${data.access_token}; path=/; max-age=${maxAgeSeconds}; SameSite=Lax`;
+      document.cookie = `userRole=${rol ?? ''}; path=/; max-age=${maxAgeSeconds}; SameSite=Lax`;
 
       // Podemos cerrar el modal si quieres
       onSuccess?.();
