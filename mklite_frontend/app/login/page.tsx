@@ -86,9 +86,16 @@ export default function LoginPage() {
 
 import { useState } from 'react';
 import { loginService } from '../services/auth.service';
+import { getUserRole } from '../utils/auth';
+
+type LoginFormState = {
+  email: string;
+  password: string;
+};
 
 export default function LoginPage() {
-  const [form, setForm] = useState({ email: '', password: '' });
+  //const [form, setForm] = useState({ email: '', password: '' });
+  const [form, setForm] = useState<LoginFormState>({ email: '', password: '' });
   const [error, setError] = useState('');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -104,12 +111,31 @@ export default function LoginPage() {
       const data = await loginService(form);
 
       // Guardamos token y datos del usuario
+       // Limpiamos cualquier sesión previa para evitar lecturas obsoletas
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('userData');
+
+      // Normalizamos el rol que devuelva el backend (rol directo o relaciones)
+      const rol = getUserRole(data.user as any);
+
+      // Guardamos token y usuario fresco
       localStorage.setItem('authToken', data.access_token);
-      localStorage.setItem('userData', JSON.stringify(data.user));
+      //localStorage.setItem('userData', JSON.stringify(data.user));
+      localStorage.setItem('userData', JSON.stringify({ ...data.user, rol }));
 
       // Sacamos el rol del usuario
       //const rol = data.user?.rol?.toUpperCase();
-      const rol = (data.user as any).rol?.toUpperCase();
+      //const rol = (data.user as any).rol?.toUpperCase();
+       // Escribimos cookies para que el middleware pueda proteger rutas
+      const maxAgeSeconds = 60 * 60 * 24; // 24h
+      document.cookie = `authToken=${data.access_token}; path=/; max-age=${maxAgeSeconds}; SameSite=Lax`;
+      document.cookie = `userRole=${rol ?? ''}; path=/; max-age=${maxAgeSeconds}; SameSite=Lax`;
+
+      // También escribimos cookies para que el middleware pueda proteger rutas
+      //const maxAgeSeconds = 60 * 60 * 24; // 24h
+      document.cookie = `authToken=${data.access_token}; path=/; max-age=${maxAgeSeconds}; SameSite=Lax`;
+      document.cookie = `userRole=${rol ?? ''}; path=/; max-age=${maxAgeSeconds}; SameSite=Lax`;
+
 
       // Redirección según rol (ESTABLE 100%)
       if (rol === 'ADMIN') {
