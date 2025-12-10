@@ -103,10 +103,25 @@ export class UserService {
     }
 
     // --- LOGIN ---
-    async findByEmailForAuth(email: string): Promise<User | undefined> {
+    /*
+        async findByEmailForAuth(email: string): Promise<User | undefined> {
         const repo = this.getUserRepo();
         const user = await repo.createQueryBuilder("user")
             .addSelect("user.password") 
+            .where("user.email = :email", { email })
+            .getOne();
+        
+        return user || undefined;
+    }
+         */
+
+    async findByEmailForAuth(email: string): Promise<User | undefined> {
+        const repo = this.getUserRepo();
+        
+        const user = await repo.createQueryBuilder("user")
+            .addSelect("user.password") // porque tiene select: false en la entidad
+            .leftJoinAndSelect("user.userRoles", "userrole")
+            .leftJoinAndSelect("userrole.role", "role")
             .where("user.email = :email", { email })
             .getOne();
         
