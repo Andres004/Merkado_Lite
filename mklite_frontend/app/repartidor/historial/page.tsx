@@ -9,12 +9,12 @@ const historialMock = [
     { id: 3933, cliente: 'Juan Pérez', monto: 150.00, fecha: '18/11/2025 15:30', estado: 'Entregado' },
     { id: 5045, cliente: 'Mario Pérez', monto: 120.00, fecha: '17/11/2025 14:30', estado: 'Entregado' },
     { id: 5028, cliente: 'Pepe Pérez', monto: 90.00, fecha: '18/11/2025 17:30', estado: 'Entregado' },
-    { id: 3933, cliente: 'Juan Pérez', monto: 150.00, fecha: '18/11/2025 15:30', estado: 'Entregado' },
-    { id: 5045, cliente: 'Mario Pérez', monto: 120.00, fecha: '17/11/2025 14:30', estado: 'Entregado' },
-    { id: 5028, cliente: 'Pepe Pérez', monto: 90.00, fecha: '18/11/2025 17:30', estado: 'Entregado' },
-    { id: 3933, cliente: 'Juan Pérez', monto: 150.00, fecha: '18/11/2025 15:30', estado: 'Entregado' },
-    { id: 5045, cliente: 'Mario Pérez', monto: 120.00, fecha: '17/11/2025 14:30', estado: 'Entregado' },
-    { id: 5028, cliente: 'Pepe Pérez', monto: 90.00, fecha: '18/11/2025 17:30', estado: 'Entregado' },
+    { id: 3934, cliente: 'Juan Pérez', monto: 150.00, fecha: '18/11/2025 15:30', estado: 'Entregado' },
+    { id: 5046, cliente: 'Mario Pérez', monto: 120.00, fecha: '17/11/2025 14:30', estado: 'Entregado' },
+    { id: 5030, cliente: 'Pepe Pérez', monto: 90.00, fecha: '18/11/2025 17:30', estado: 'Entregado' },
+    { id: 3935, cliente: 'Juan Pérez', monto: 150.00, fecha: '18/11/2025 15:30', estado: 'Entregado' },
+    { id: 5047, cliente: 'Mario Pérez', monto: 120.00, fecha: '17/11/2025 14:30', estado: 'Entregado' },
+    { id: 5029, cliente: 'Pepe Pérez', monto: 90.00, fecha: '18/11/2025 17:30', estado: 'Entregado' },
 ];
 
 // Componente para la etiqueta de estado
