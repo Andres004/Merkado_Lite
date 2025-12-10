@@ -9,9 +9,9 @@ import { ChevronUp, CheckCircle2 } from 'lucide-react';
 // Deben coincidir con los que definimos en tu mapa de categorías
 const categories = [
   { name: "Frutas y Verduras", slug: "frutas-y-verduras" },
-  { name: "Carnes y Embutidos", slug: "carnes" },
-  { name: "Lácteos y Huevos", slug: "lacteos" },
-  { name: "Bebidas y Refrescos", slug: "bebidas" },
+  { name: "Carnes", slug: "carnes" },
+  { name: "Lácteos", slug: "lacteos" },
+  { name: "Bebidas", slug: "bebidas" },
   { name: "Snacks", slug: "snacks" },
   { name: "Mascotas", slug: "mascotas" },
   { name: "Panadería", slug: "panaderia" },
