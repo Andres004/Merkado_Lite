@@ -5,6 +5,8 @@ import { InventoryService } from '../inventory/inventory.service';
 import { Product } from '../entity/product.entity';
 import { Category } from '../entity/category.entity';
 import { AppDataSource } from 'src/data-source';
+import * as bcrypt from 'bcrypt';
+
 
 @Injectable()
 export class SeedService implements OnModuleInit {
@@ -269,44 +271,48 @@ export class SeedService implements OnModuleInit {
   // ----------------------------------------------------------------
   // 2) Usuarios, roles, usuario_rol
   // ----------------------------------------------------------------
-  private async seedUsersAndRoles() {
-    console.log('Sembrando roles y usuarios...');
+ private async seedUsersAndRoles() {
+  console.log('Sembrando roles y usuarios...');
 
-    // 2.1) ROLES
-    await AppDataSource.query(`
-      INSERT INTO rol (id_rol, nombre) VALUES
-        (1, 'ADMIN'),
-        (2, 'REPARTIDOR'),
-        (3, 'CLIENTE')
-      ON DUPLICATE KEY UPDATE nombre = VALUES(nombre);
-    `);
+  // Crear los hashes
+  const adminPass = await bcrypt.hash('Admin123!', 10);
+  const repartidorPass = await bcrypt.hash('Repartidor123!', 10);
+  const clientePass = await bcrypt.hash('Cliente123!', 10);
 
-    // 2.2) USUARIOS (si ya existen, no duplicar por email)
-    await AppDataSource.query(`
+  await AppDataSource.query(`
+    INSERT INTO rol (id_rol, nombre) VALUES
+      (1, 'ADMIN'),
+      (2, 'REPARTIDOR'),
+      (3, 'CLIENTE')
+    ON DUPLICATE KEY UPDATE nombre = VALUES(nombre);
+  `);
+
+  await AppDataSource.query(
+    `
       INSERT INTO usuario (
         id_usuario, nombre, apellido, ci, email, password,
         telefono, direccion, estado_cuenta, es_admin_principal, fecha_registro
       ) VALUES
-        (1, 'Admin',   'Principal', '10000001', 'admin@mklite.com',      'Admin123!',
-         '70000001', 'Calle Admin 123', 'activo', 1, NOW()),
-        (2, 'Carlos',  'Repartidor','10000002', 'repartidor@mklite.com', 'Repartidor123!',
-         '70000002', 'Zona Repartidores', 'activo', 0, NOW()),
-        (3, 'Lucía',   'Cliente',   '10000003', 'cliente@mklite.com',    'Cliente123!',
-         '70000003', 'Zona Clientes', 'activo', 0, NOW())
+        (1, 'Admin', 'Principal', '10000001', 'admin@mklite.com', ?, '70000001', 'Calle Admin 123', 'activo', 1, NOW()),
+        (2, 'Carlos', 'Repartidor', '10000002', 'repartidor@mklite.com', ?, '70000002', 'Zona Repartidores', 'activo', 0, NOW()),
+        (3, 'Lucía', 'Cliente', '10000003', 'cliente@mklite.com', ?, '70000003', 'Zona Clientes', 'activo', 0, NOW())
       ON DUPLICATE KEY UPDATE email = VALUES(email);
-    `);
+    `,
+    [adminPass, repartidorPass, clientePass],
+  );
 
-    // 2.3) USUARIO_ROL
-    await AppDataSource.query(`
-      INSERT INTO usuario_rol (id_usuario, id_rol) VALUES
-        (1, 1),
-        (2, 2),
-        (3, 3)
-      ON DUPLICATE KEY UPDATE id_rol = VALUES(id_rol);
-    `);
+  await AppDataSource.query(`
+    INSERT INTO usuario_rol (id_usuario, id_rol) VALUES
+      (1, 1),
+      (2, 2),
+      (3, 3)
+    ON DUPLICATE KEY UPDATE id_rol = VALUES(id_rol);
+  `);
 
-    console.log('Roles y usuarios sembrados.');
-  }
+  console.log('Roles y usuarios sembrados.');
+}
+
+  ////fin seeduserandroles
 
   // ----------------------------------------------------------------
   // 3) Proveedores y lotes
