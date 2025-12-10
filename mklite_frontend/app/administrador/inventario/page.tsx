@@ -1,15 +1,19 @@
 "use client";
 
+
 import React, { useState } from 'react';
 import AdminSidebar from '../../components/AdminSidebar'; // Asume que la ruta es correcta
 import { PlusCircle, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
+
 
 // ----------------------------------------------------
 // 1. DEFINICIÓN DE TIPOS Y MOCK DATA
 // ----------------------------------------------------
 
+
 // Tipo para el estado de stock
 type EstadoStock = 'En stock' | 'Bajo stock' | 'Agotado';
+
 
 // Interfaz para un producto en el inventario
 interface Producto {
@@ -18,6 +22,7 @@ interface Producto {
     stockTotal: number; // en unidades (uds)
     umbralMinimo: number;
 }
+
 
 // Datos simulados (MOCK DATA)
 const mockInventario: Producto[] = [
@@ -33,6 +38,7 @@ const mockInventario: Producto[] = [
     { id: 10, nombre: 'Mantequilla Gloria 500gr', stockTotal: 150, umbralMinimo: 50 },
 ];
 
+
 /**
  * Función que calcula el estado del stock
  */
@@ -46,16 +52,18 @@ const getEstadoStock = (stockTotal: number, umbralMinimo: number): EstadoStock =
     return 'En stock';
 };
 
+
 // ----------------------------------------------------
 // 2. COMPONENTES DE VISTA
 // ----------------------------------------------------
+
 
 /**
  * Componente que muestra el estado del stock con colores e iconos.
  */
 const StockBadge: React.FC<{ estado: EstadoStock }> = ({ estado }) => {
     let style = { bgColor: 'bg-gray-100', textColor: 'text-gray-700', icon: CheckCircle };
-    
+   
     switch (estado) {
         case 'Agotado':
             style = { bgColor: 'bg-red-100', textColor: 'text-red-700', icon: XCircle };
@@ -68,7 +76,9 @@ const StockBadge: React.FC<{ estado: EstadoStock }> = ({ estado }) => {
             break;
     }
 
+
     const Icon = style.icon;
+
 
     return (
         <span className={`inline-flex items-center px-3 py-1 text-xs font-semibold rounded-full ${style.bgColor} ${style.textColor}`}>
@@ -78,20 +88,23 @@ const StockBadge: React.FC<{ estado: EstadoStock }> = ({ estado }) => {
     );
 };
 
+
 // ----------------------------------------------------
 // 3. PÁGINA PRINCIPAL (AdminInventarioPage)
 // ----------------------------------------------------
+
 
 export default function AdminInventarioPage() {
     // Estado para la simulación de paginación
     const [paginaActual, setPaginaActual] = useState(1);
     const productosPorPagina = 10;
-    
+   
     // Simulación de paginación y datos
     const totalPaginas = Math.ceil(mockInventario.length / productosPorPagina);
     const inicio = (paginaActual - 1) * productosPorPagina;
     const fin = inicio + productosPorPagina;
     const productosPagina = mockInventario.slice(inicio, fin);
+
 
     // Funciones de acción simuladas
     const verLotes = (productoNombre: string) => alert(`Viendo lotes para: ${productoNombre}`);
@@ -103,24 +116,26 @@ export default function AdminInventarioPage() {
     };
     const registrarNuevoLote = () => alert('Abriendo formulario para registrar un nuevo lote...');
 
+
     return (
         <div className="min-h-screen bg-gray-50 pt-8 pb-16">
             <div className="max-w-7xl mx-auto px-4">
-                
+               
                 {/* Estructura de Contenido: Sidebar + Contenido Principal */}
                 <div className="flex flex-col lg:flex-row gap-6">
-                    
+                   
                     {/* Columna Izquierda: Menú de Navegación */}
                     <aside className="hidden lg:block lg:w-64">
                         <AdminSidebar />
                     </aside>
 
+
                     {/* Columna Derecha: Contenido de Gestión de Inventario */}
                     <main className="flex-1 bg-white rounded-lg shadow-md p-6">
-                        
+                       
                         <div className="flex justify-between items-center mb-6 border-b pb-3">
                             <h1 className="text-3xl font-extrabold text-gray-900">Gestión de Inventario</h1>
-                            
+                           
                             {/* Botón Registrar Nuevo Lote */}
                             <button
                                 onClick={registrarNuevoLote}
@@ -130,6 +145,7 @@ export default function AdminInventarioPage() {
                                 Registrar Nuevo Lote
                             </button>
                         </div>
+
 
                         {/* Tabla de Inventario */}
                         <div className="overflow-x-auto bg-white rounded-xl border border-gray-100 shadow-sm">
@@ -156,13 +172,13 @@ export default function AdminInventarioPage() {
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
                                                     <div className="flex justify-center space-x-4">
-                                                        <button 
+                                                        <button
                                                             onClick={() => verLotes(producto.nombre)}
                                                             className="text-red-500 hover:text-red-700 transition duration-150 whitespace-nowrap"
                                                         >
                                                             Ver Lotes
                                                         </button>
-                                                        <button 
+                                                        <button
                                                             onClick={() => editarUmbral(producto.nombre)}
                                                             className="text-gray-500 hover:text-gray-700 transition duration-150 whitespace-nowrap"
                                                         >
@@ -176,18 +192,18 @@ export default function AdminInventarioPage() {
                                 </tbody>
                             </table>
                         </div>
-                        
+                       
                         {/* Paginación */}
                         <div className="mt-6 flex justify-center items-center text-sm">
                             <nav className="flex items-center space-x-1">
-                                <button 
+                                <button
                                     onClick={() => setPaginaActual(p => Math.max(1, p - 1))}
                                     disabled={paginaActual === 1}
                                     className="p-2 border border-gray-300 rounded-full text-gray-500 hover:bg-gray-100 disabled:opacity-50"
                                 >
                                     &lt;
                                 </button>
-                                
+                               
                                 {Array.from({ length: totalPaginas }, (_, i) => i + 1).map(page => (
                                     <button
                                         key={page}
@@ -201,8 +217,8 @@ export default function AdminInventarioPage() {
                                         {page}
                                     </button>
                                 ))}
-                                
-                                <button 
+                               
+                                <button
                                     onClick={() => setPaginaActual(p => Math.min(totalPaginas, p + 1))}
                                     disabled={paginaActual === totalPaginas}
                                     className="p-2 border border-gray-300 rounded-full text-gray-500 hover:bg-gray-100 disabled:opacity-50"
@@ -211,6 +227,7 @@ export default function AdminInventarioPage() {
                                 </button>
                             </nav>
                         </div>
+
 
                     </main>
                 </div>

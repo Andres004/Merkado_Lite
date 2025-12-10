@@ -1,12 +1,15 @@
 "use client";
 
+
 import React, { useState } from 'react';
 import AdminSidebar from '../components/AdminSidebar'; // Importamos el sidebar creado
 import { MoreVertical, DollarSign, Package, RotateCw, ShoppingCart } from 'lucide-react';
 
+
 // ----------------------------------------------------
 // 1. MOCK DATA Y TIPOS
 // ----------------------------------------------------
+
 
 interface KpiCardProps {
     title: string;
@@ -15,6 +18,7 @@ interface KpiCardProps {
     icon: React.ElementType;
     color: string;
 }
+
 
 const kpis = [
     {
@@ -40,6 +44,7 @@ const kpis = [
     },
 ];
 
+
 // Datos simulados para el gráfico de línea (Ventas por Hora)
 const salesData = [
     { hour: '8:00', sales: 50 }, { hour: '9:00', sales: 80 }, { hour: '10:00', sales: 150 },
@@ -48,15 +53,18 @@ const salesData = [
     { hour: '17:00', sales: 40 }, { hour: '18:00', sales: 60 }
 ];
 
+
 // Datos simulados para el gráfico de barras (Productos Más Vendidos)
 const topProducts = [
     { name: 'Leche PIL', sales: 100 }, { name: 'Fanta', sales: 30 }, { name: 'Naranja', sales: 45 },
     { name: 'Frutilla', sales: 20 }, { name: 'Tomate', sales: 90 }, { name: 'Nuggets Dino', sales: 65 },
 ];
 
+
 // ----------------------------------------------------
 // 2. COMPONENTES DE GRÁFICO (Simulados con SVG)
 // ----------------------------------------------------
+
 
 /**
  * Gráfico de Línea SVG simulado para Ventas Por Hora.
@@ -66,11 +74,13 @@ const SalesLineChart: React.FC = () => {
     const height = 200;
     const padding = 30;
 
+
     // Calcular escalas
     const maxSales = 200;
     const maxDataSales = Math.max(...salesData.map(d => d.sales));
     const xUnit = (width - 2 * padding) / (salesData.length - 1);
     const yUnit = (height - 2 * padding) / maxSales;
+
 
     // Generar la cadena de puntos (polyline points)
     const points = salesData.map((d, i) => {
@@ -79,6 +89,7 @@ const SalesLineChart: React.FC = () => {
         const y = height - padding - d.sales * yUnit;
         return `${x},${y}`;
     }).join(' ');
+
 
     // Eje Y: 5 líneas de guía (0, 50, 100, 150, 200 Bs.)
     const yLines = [0, 50, 100, 150, 200].map((value, index) => {
@@ -93,6 +104,7 @@ const SalesLineChart: React.FC = () => {
         );
     });
 
+
     // Eje X: Etiquetas de hora
     const xLabels = salesData.map((d, i) => {
         const x = padding + i * xUnit;
@@ -103,11 +115,12 @@ const SalesLineChart: React.FC = () => {
         );
     });
 
+
     return (
         <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full">
             {/* Fondo y Guías Y */}
             {yLines}
-            
+           
             {/* Línea Principal del Gráfico */}
             <polyline
                 fill="none"
@@ -117,7 +130,7 @@ const SalesLineChart: React.FC = () => {
                 strokeLinejoin="round"
                 strokeLinecap="round"
             />
-            
+           
             {/* Puntos (Opcional, para destacar) */}
             {salesData.map((d, i) => {
                 const x = padding + i * xUnit;
@@ -125,12 +138,14 @@ const SalesLineChart: React.FC = () => {
                 return <circle key={`dot-${i}`} cx={x} cy={y} r="4" fill="#F40009" stroke="white" strokeWidth="2" />;
             })}
 
+
             {/* Eje X y Etiquetas */}
             <line x1={padding} y1={height - padding} x2={width - padding} y2={height - padding} stroke="#d1d5db" />
             {xLabels}
         </svg>
     );
 };
+
 
 /**
  * Gráfico de Barras SVG simulado para Productos Más Vendidos.
@@ -141,10 +156,12 @@ const TopProductsBarChart: React.FC = () => {
     const padding = 20;
     const barWidth = 20;
 
+
     // Calcular escalas
     const maxSales = Math.max(...topProducts.map(d => d.sales));
     const totalBars = topProducts.length;
     const groupSpace = (width - 2 * padding) / totalBars;
+
 
     // Calcular las barras
     const bars = topProducts.map((d, i) => {
@@ -152,24 +169,25 @@ const TopProductsBarChart: React.FC = () => {
         const barHeight = (d.sales / maxSales) * (height - 2 * padding);
         const y = height - padding - barHeight;
 
+
         return (
             <g key={d.name}>
                 {/* Barra */}
-                <rect 
-                    x={x} 
-                    y={y} 
-                    width={barWidth} 
-                    height={barHeight} 
-                    fill="#F40009" 
-                    rx="4" 
+                <rect
+                    x={x}
+                    y={y}
+                    width={barWidth}
+                    height={barHeight}
+                    fill="#F40009"
+                    rx="4"
                     ry="4"
                     className="hover:fill-red-700 transition-colors duration-150"
                 />
                 {/* Etiqueta X */}
-                <text 
-                    x={x + barWidth / 2} 
-                    y={height - padding + 5} 
-                    textAnchor="middle" 
+                <text
+                    x={x + barWidth / 2}
+                    y={height - padding + 5}
+                    textAnchor="middle"
                     className="text-xs fill-gray-700"
                     // Rota el texto para que no se superponga
                     transform={`rotate(45, ${x + barWidth / 2}, ${height - padding + 5}) translate(0, 10)`}
@@ -184,6 +202,7 @@ const TopProductsBarChart: React.FC = () => {
         );
     });
 
+
     return (
         <svg viewBox={`0 0 ${width} ${height + 40}`} className="w-full h-full overflow-visible">
              <g transform={`translate(0, 0)`}>
@@ -194,9 +213,12 @@ const TopProductsBarChart: React.FC = () => {
 };
 
 
+
+
 // ----------------------------------------------------
 // 3. COMPONENTE KPI CARD
 // ----------------------------------------------------
+
 
 const KpiCard: React.FC<KpiCardProps> = ({ title, value, subtext, icon: Icon, color }) => (
     <div className="bg-white rounded-xl shadow-lg p-5 border border-gray-100 flex flex-col justify-between">
@@ -217,35 +239,39 @@ const KpiCard: React.FC<KpiCardProps> = ({ title, value, subtext, icon: Icon, co
 );
 
 
+
+
 // ----------------------------------------------------
 // 4. PÁGINA PRINCIPAL
 // ----------------------------------------------------
 export default function AdminDashboardPage() {
     // Estado mock para la selección de fecha
     const [selectedDate, setSelectedDate] = useState('12/11/2025');
-    
+   
     // Lista de opciones de fechas mock
     const dateOptions = ['12/11/2025', '11/11/2025', '10/11/2025'];
+
 
     return (
         <div className="min-h-screen bg-gray-50 pt-8 pb-16">
             <div className="max-w-7xl mx-auto px-4">
-                
+               
                 {/* Estructura de Contenido: Sidebar + Contenido Principal */}
                 <div className="flex flex-col lg:flex-row gap-6">
-                    
+                   
                     {/* Columna Izquierda: Menú de Navegación */}
                     <aside className="hidden lg:block lg:w-64">
                         <AdminSidebar />
                     </aside>
 
+
                     {/* Columna Derecha: Contenido del Dashboard */}
                     <main className="flex-1">
                         <div className="flex justify-between items-center mb-6">
                             <h1 className="text-3xl font-extrabold text-gray-900">Panel de Control: Resumen del Día</h1>
-                            
+                           
                             {/* Selector de Fecha */}
-                            <select 
+                            <select
                                 value={selectedDate}
                                 onChange={(e) => setSelectedDate(e.target.value)}
                                 className="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-red-500 focus:border-red-500 block p-2.5 shadow-sm"
@@ -256,6 +282,7 @@ export default function AdminDashboardPage() {
                             </select>
                         </div>
 
+
                         {/* 1. Tarjetas de Indicadores Clave (KPIs) */}
                         <section className="mb-8">
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -265,9 +292,10 @@ export default function AdminDashboardPage() {
                             </div>
                         </section>
 
+
                         {/* 2. Gráficos de Análisis */}
                         <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                            
+                           
                             {/* Ventas por Hora (Gráfico de Línea) */}
                             <div className="lg:col-span-2 bg-white rounded-xl shadow-lg p-6 border border-gray-100">
                                 <h2 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Ventas Por Hora</h2>
@@ -275,7 +303,7 @@ export default function AdminDashboardPage() {
                                     <SalesLineChart />
                                 </div>
                             </div>
-                            
+                           
                             {/* Productos Más Vendidos (Gráfico de Barras) */}
                             <div className="lg:col-span-1 bg-white rounded-xl shadow-lg p-6 border border-gray-100">
                                 <h2 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Productos Más Vendidos</h2>
@@ -284,10 +312,10 @@ export default function AdminDashboardPage() {
                                 </div>
                             </div>
                         </section>
-                        
+                       
                         {/* 3. Alertas y Pedidos Pendientes (Basado en la segunda imagen proporcionada) */}
                         <section className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-                            
+                           
                             {/* Alertas de Stock Mínimo */}
                             <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
                                 <h2 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Alertas de Stock Mínimo</h2>
@@ -305,6 +333,7 @@ export default function AdminDashboardPage() {
                                     <a href="/administrador/inventario" className="text-sm text-[#F40009] hover:underline font-medium">Ver Inventario Completo</a>
                                 </div>
                             </div>
+
 
                             {/* Últimos Pedidos Pendientes */}
                             <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
@@ -331,6 +360,7 @@ export default function AdminDashboardPage() {
                                     <a href="/administrador/pedidos" className="text-sm text-[#F40009] hover:underline font-medium">Ver todos los Pedidos</a>
                                 </div>
                             </div>
+
 
                         </section>
                     </main>
