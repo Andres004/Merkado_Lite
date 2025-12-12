@@ -1,8 +1,12 @@
 "use client";
 
-import React, { useState } from 'react';
+//import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import RepartidorSidebar from '../../components/RepartidorSidebar'; // Asegúrate de que esta ruta sea correcta
-import { CheckCircle, Star, TrendingDown, DollarSign, Edit, Save, LucideIcon } from 'lucide-react';
+import { CheckCircle, Star, TrendingDown, DollarSign, Edit, Save, LucideIcon, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { getShipmentHistory, getUserProfile, updateUserProfile } from '../../services/shipment.service';
+import { changePassword } from '../../services/user.service';
+import { Shipment } from '../../types/shipment';
 
 // ----------------------------------------------------
 // 1. DEFINICIÓN DE TIPOS
@@ -16,34 +20,6 @@ interface Metrica {
     subtexto: string;
     icono: LucideIcon; 
 }
-
-// MOCK DATA para el rendimiento
-const metricasRendimiento: Metrica[] = [
-    { 
-        titulo: 'Entregas Exitosas', 
-        valor: '450', 
-        subtexto: 'Total a la fecha. Métrica de productividad principal.', 
-        icono: CheckCircle 
-    },
-    { 
-        titulo: 'Calificación Promedio', 
-        valor: '4.8 / 5.0', 
-        subtexto: 'Basado en últimas 50 entregas. Métrica de calidad y servicio al cliente.', 
-        icono: Star 
-    },
-    { 
-        titulo: 'Tasa de Falla', 
-        valor: '2.5%', 
-        subtexto: 'Pedidos reportados como Fallidos. Métrica de eficiencia.', 
-        icono: TrendingDown 
-    },
-    { 
-        titulo: 'Total Recaudado', 
-        valor: 'Bs: 12.000', 
-        subtexto: 'Recaudado este mes. Métrica financiera importante para la reconciliación.', 
-        icono: DollarSign 
-    },
-];
 
 // ----------------------------------------------------
 // 2. COMPONENTE METRICACARD
@@ -67,13 +43,101 @@ export default function RepartidorPerfilPage() {
     const [isAvailable, setIsAvailable] = useState(true);
 
     // Estado para la información personal (MOCK)
-    const [userInfo, setUserInfo] = useState({
-        nombreCompleto: 'Pepe Maiz',
-        correoElectronico: 'pepe.maiz@gmail.com',
-        telefono: '7894567',
-        licenciaCI: '8954780',
-    });
     const [isEditing, setIsEditing] = useState(false);
+    const [userId, setUserId] = useState<number | null>(null);
+    const [userInfo, setUserInfo] = useState({
+        nombre: '',
+        apellido: '',
+        email: '',
+        telefono: '',
+        direccion: '',
+        ci: '',
+    });
+    //const [isEditing, setIsEditing] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [metricsLoading, setMetricsLoading] = useState(false);
+    const [metricsError, setMetricsError] = useState<string | null>(null);
+    const [deliveredShipments, setDeliveredShipments] = useState<Shipment[]>([]);
+    const [failedShipments, setFailedShipments] = useState<Shipment[]>([]);
+
+    const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+    const [passwordForm, setPasswordForm] = useState({
+        current: '',
+        new: '',
+        confirm: '',
+    });
+    const [showPassword, setShowPassword] = useState({
+        current: false,
+        new: false,
+        confirm: false,
+    });
+    const [passwordLoading, setPasswordLoading] = useState(false);
+    const [passwordError, setPasswordError] = useState<string | null>(null);
+    const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null);
+
+    useEffect(() => {
+        const storedUser = localStorage.getItem('userData');
+        if (!storedUser) return;
+        try {
+            const parsed = JSON.parse(storedUser);
+            setUserId(parsed.id_usuario);
+            setUserInfo((prev) => ({
+                ...prev,
+                nombre: parsed.nombre ?? '',
+                apellido: parsed.apellido ?? '',
+                email: parsed.email ?? '',
+                telefono: parsed.telefono ?? '',
+                direccion: parsed.direccion ?? '',
+                ci: parsed.ci ?? '',
+            }));
+        } catch (error) {
+            console.error('No se pudo leer userData', error);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (!userId) return;
+        loadProfile(userId);
+        loadMetrics(userId);
+    }, [userId]);
+
+    const loadProfile = async (id: number) => {
+        setLoading(true);
+        try {
+            const data = await getUserProfile(id);
+            setUserInfo({
+                nombre: data.nombre ?? '',
+                apellido: data.apellido ?? '',
+                email: data.email ?? '',
+                telefono: data.telefono ?? '',
+                direccion: data.direccion ?? '',
+                ci: data.ci ?? '',
+            });
+        } catch (error) {
+            console.error('Error al cargar perfil', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const loadMetrics = async (id: number) => {
+        setMetricsLoading(true);
+        setMetricsError(null);
+        try {
+            const [delivered, failed] = await Promise.all([
+                getShipmentHistory(id, 'entregado'),
+                getShipmentHistory(id, 'fallido'),
+            ]);
+            setDeliveredShipments(Array.isArray(delivered) ? delivered : []);
+            setFailedShipments(Array.isArray(failed) ? failed : []);
+        } catch (error) {
+            console.error('Error al cargar métricas', error);
+            setMetricsError('No se pudieron cargar tus métricas. Intenta nuevamente.');
+        } finally {
+            setMetricsLoading(false);
+        }
+    };
+
 
     // Manejador para la edición de inputs
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -81,12 +145,145 @@ export default function RepartidorPerfilPage() {
         setUserInfo(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleSave = () => {
-        // Lógica para enviar los datos actualizados a la API
-        console.log("Guardando información:", userInfo);
-        setIsEditing(false);
-        // Aquí se podría mostrar un toast o mensaje de éxito
+    const handleSave = async () => {
+        if (!userId) return;
+        setLoading(true);
+        try {
+            await updateUserProfile(userId, {
+                nombre: userInfo.nombre,
+                apellido: userInfo.apellido,
+                email: userInfo.email,
+                telefono: userInfo.telefono,
+                direccion: userInfo.direccion,
+            });
+            setIsEditing(false);
+        } catch (error) {
+            console.error('No se pudo actualizar el perfil', error);
+        } finally {
+            setLoading(false);
+        }
     };
+
+    const parseNumber = (value?: number | string | null) => {
+        if (typeof value === 'number') return value;
+        if (typeof value === 'string') {
+            const parsed = parseFloat(value);
+            return Number.isFinite(parsed) ? parsed : 0;
+        }
+        return 0;
+    };
+
+    const totalDelivered = useMemo(() => deliveredShipments.length, [deliveredShipments]);
+    const totalFailed = useMemo(() => failedShipments.length, [failedShipments]);
+
+    const totalCollected = useMemo(() => {
+        return deliveredShipments.reduce((acc, item) => acc + parseNumber(item.order?.total), 0);
+    }, [deliveredShipments]);
+
+    const failureRate = useMemo(() => {
+        const total = totalDelivered + totalFailed;
+        if (total === 0) return 0;
+        return (totalFailed / total) * 100;
+    }, [totalDelivered, totalFailed]);
+
+    const averageRating = useMemo(() => {
+        const ratings = deliveredShipments
+            .map((item) => item.calificacion_cliente)
+            .filter((value): value is number => value !== null && value !== undefined && Number.isFinite(Number(value)))
+            .map((value) => Number(value));
+
+        if (!ratings.length) return null;
+        const sum = ratings.reduce((acc, value) => acc + value, 0);
+        return sum / ratings.length;
+    }, [deliveredShipments]);
+
+    const metricasRendimiento: Metrica[] = useMemo(() => [
+        {
+            titulo: 'Entregas Exitosas',
+            valor: `${totalDelivered}`,
+            subtexto: 'Total entregados con éxito.',
+            icono: CheckCircle,
+        },
+        {
+            titulo: 'Calificación Promedio',
+            valor: averageRating !== null ? `${averageRating.toFixed(1)} / 5.0` : '—',
+            subtexto: 'Basado en entregas calificadas.',
+            icono: Star,
+        },
+        {
+            titulo: 'Tasa de Falla',
+            valor: `${failureRate.toFixed(1)}%`,
+            subtexto: 'Fallidos vs total de entregas.',
+            icono: TrendingDown,
+        },
+        {
+            titulo: 'Total Recaudado',
+            valor: `Bs: ${totalCollected.toFixed(2)}`,
+            subtexto: 'Monto de envíos entregados.',
+            icono: DollarSign,
+        },
+    ], [totalDelivered, averageRating, failureRate, totalCollected]);
+
+    const handlePasswordInputChange = (field: 'current' | 'new' | 'confirm', value: string) => {
+        setPasswordForm((prev) => ({ ...prev, [field]: value }));
+    };
+
+    const togglePasswordVisibility = (field: 'current' | 'new' | 'confirm') => {
+        setShowPassword((prev) => ({ ...prev, [field]: !prev[field] }));
+    };
+
+    const resetPasswordState = (options?: { keepSuccess?: boolean }) => {
+        setPasswordForm({ current: '', new: '', confirm: '' });
+        setShowPassword({ current: false, new: false, confirm: false });
+        setPasswordError(null);
+        if (!options?.keepSuccess) {
+            setPasswordSuccess(null);
+        }
+        setPasswordLoading(false);
+    };
+
+    const handlePasswordSubmit = async () => {
+        if (!passwordForm.current || !passwordForm.new || !passwordForm.confirm) {
+            setPasswordError('Completa todos los campos.');
+            return;
+        }
+
+        if (passwordForm.new.length < 8) {
+            setPasswordError('La nueva contraseña debe tener al menos 8 caracteres.');
+            return;
+        }
+
+        if (passwordForm.new !== passwordForm.confirm) {
+            setPasswordError('La nueva contraseña y la confirmación no coinciden.');
+            return;
+        }
+
+        if (!userId) {
+            setPasswordError('No se pudo identificar al usuario.');
+            return;
+        }
+
+        setPasswordError(null);
+        setPasswordSuccess(null);
+        setPasswordLoading(true);
+
+        try {
+            await changePassword({
+                //userId,
+                currentPassword: passwordForm.current,
+                newPassword: passwordForm.new,
+            });
+            setPasswordSuccess('Contraseña actualizada correctamente.');
+            setIsPasswordModalOpen(false);
+            resetPasswordState({ keepSuccess: true });
+        } catch (error) {
+            console.error('Error al cambiar contraseña', error);
+            setPasswordError('No se pudo actualizar la contraseña. Intenta nuevamente.');
+        } finally {
+            setPasswordLoading(false);
+        }
+    };
+
 
     // Switch de disponibilidad
     const AvailabilitySwitch = () => (
@@ -132,11 +329,28 @@ export default function RepartidorPerfilPage() {
                         {/* 2. Métricas de Rendimiento */}
                         <section className="mb-10">
                             <h2 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Tu Rendimiento Clave</h2>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                {metricasRendimiento.map((metrica) => (
-                                    <MetricaCard key={metrica.titulo} {...metrica} />
-                                ))}
-                            </div>
+                            {metricsError && (
+                                <p className="text-sm text-red-600 mb-3">{metricsError}</p>
+                            )}
+                            {metricsLoading ? (
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                    {[1, 2, 3, 4].map((item) => (
+                                        <div key={item} className="bg-white border border-gray-100 rounded-xl shadow-sm p-4">
+                                            <div className="animate-pulse space-y-3">
+                                                <div className="h-6 bg-gray-200 rounded w-10 mx-auto"></div>
+                                                <div className="h-8 bg-gray-200 rounded"></div>
+                                                <div className="h-4 bg-gray-200 rounded"></div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                    {metricasRendimiento.map((metrica) => (
+                                        <MetricaCard key={metrica.titulo} {...metrica} />
+                                    ))}
+                                </div>
+                            )}
                         </section>
 
                         {/* 3. Información Personal */}
@@ -155,11 +369,24 @@ export default function RepartidorPerfilPage() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 {/* Nombre Completo */}
                                 <div className="space-y-1">
-                                    <label className="block text-sm font-medium text-gray-700">Nombre Completo</label>
+                                    
+                                    <label className="block text-sm font-medium text-gray-700">Nombre</label>
                                     <input
                                         type="text"
-                                        name="nombreCompleto"
-                                        value={userInfo.nombreCompleto}
+                                        name="nombre"
+                                        value={userInfo.nombre}
+                                        onChange={handleInputChange}
+                                        disabled={!isEditing}
+                                        className={`w-full p-3 border rounded-lg text-gray-900 focus:outline-none transition-all ${isEditing ? 'border-red-400 bg-white focus:ring-2 focus:ring-red-200' : 'border-gray-300 bg-gray-100 cursor-not-allowed'}`}
+                                    />
+                                </div>
+
+                                <div className="space-y-1">
+                                    <label className="block text-sm font-medium text-gray-700">Apellido</label>
+                                    <input
+                                        type="text"
+                                        name="apellido"
+                                        value={userInfo.apellido}
                                         onChange={handleInputChange}
                                         disabled={!isEditing}
                                         className={`w-full p-3 border rounded-lg text-gray-900 focus:outline-none transition-all ${isEditing ? 'border-red-400 bg-white focus:ring-2 focus:ring-red-200' : 'border-gray-300 bg-gray-100 cursor-not-allowed'}`}
@@ -171,8 +398,8 @@ export default function RepartidorPerfilPage() {
                                     <label className="block text-sm font-medium text-gray-700">Correo Electrónico</label>
                                     <input
                                         type="email"
-                                        name="correoElectronico"
-                                        value={userInfo.correoElectronico}
+                                        name="email"
+                                        value={userInfo.email}
                                         onChange={handleInputChange}
                                         disabled={!isEditing}
                                         className={`w-full p-3 border rounded-lg text-gray-900 focus:outline-none transition-all ${isEditing ? 'border-red-400 bg-white focus:ring-2 focus:ring-red-200' : 'border-gray-300 bg-gray-100 cursor-not-allowed'}`}
@@ -194,14 +421,26 @@ export default function RepartidorPerfilPage() {
 
                                 {/* Licencia/CI */}
                                 <div className="space-y-1">
-                                    <label className="block text-sm font-medium text-gray-700">Licencia/CI</label>
+                                    
+                                    <label className="block text-sm font-medium text-gray-700">Dirección</label>
                                     <input
                                         type="text"
-                                        name="licenciaCI"
-                                        value={userInfo.licenciaCI}
+                                        name="direccion"
+                                        value={userInfo.direccion}
                                         onChange={handleInputChange}
                                         disabled={!isEditing}
                                         className={`w-full p-3 border rounded-lg text-gray-900 focus:outline-none transition-all ${isEditing ? 'border-red-400 bg-white focus:ring-2 focus:ring-red-200' : 'border-gray-300 bg-gray-100 cursor-not-allowed'}`}
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="block text-sm font-medium text-gray-700">CI</label>
+                                    <input
+                                        type="text"
+                                        name="ci"
+                                        value={userInfo.ci}
+                                        onChange={handleInputChange}
+                                        disabled
+                                        className={`w-full p-3 border rounded-lg text-gray-900 focus:outline-none transition-all border-gray-300 bg-gray-100 cursor-not-allowed`}
                                     />
                                 </div>
                             </div>
@@ -209,18 +448,133 @@ export default function RepartidorPerfilPage() {
                             {/* Botón de acción */}
                             <div className="mt-8 flex justify-start">
                                 {!isEditing && (
-                                    <button 
-                                        onClick={() => console.log("Lógica para cambiar contraseña")}
+                                   <button
+                                        onClick={() => {
+                                            setIsPasswordModalOpen(true);
+                                            setPasswordError(null);
+                                        }}
                                         className="bg-gray-800 hover:bg-gray-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-colors active:scale-95"
                                     >
                                         Cambiar Contraseña
                                     </button>
                                 )}
                             </div>
+                            {passwordSuccess && (
+                                <p className="text-sm text-green-600 mt-3">{passwordSuccess}</p>
+                            )}
                         </section>
                     </main>
                 </div>
             </div>
+            {isPasswordModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-xl font-bold text-gray-900">Cambiar Contraseña</h3>
+                            <button
+                                onClick={() => {
+                                    resetPasswordState();
+                                    setIsPasswordModalOpen(false);
+                                }}
+                                className="text-gray-500 hover:text-gray-700"
+                                aria-label="Cerrar"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div className="space-y-1">
+                                <label className="block text-sm font-medium text-gray-700">Contraseña actual</label>
+                                <div className="relative">
+                                    <input
+                                        type={showPassword.current ? 'text' : 'password'}
+                                        value={passwordForm.current}
+                                        onChange={(e) => handlePasswordInputChange('current', e.target.value)}
+                                        className="w-full p-3 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-200"
+                                        placeholder="Introduce tu contraseña actual"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => togglePasswordVisibility('current')}
+                                        className="absolute inset-y-0 right-3 flex items-center text-gray-500"
+                                        aria-label={showPassword.current ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                                    >
+                                        {showPassword.current ? <EyeOff size={18} /> : <Eye size={18} />}
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="space-y-1">
+                                <label className="block text-sm font-medium text-gray-700">Nueva contraseña</label>
+                                <div className="relative">
+                                    <input
+                                        type={showPassword.new ? 'text' : 'password'}
+                                        value={passwordForm.new}
+                                        onChange={(e) => handlePasswordInputChange('new', e.target.value)}
+                                        className="w-full p-3 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-200"
+                                        placeholder="Crea una nueva contraseña"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => togglePasswordVisibility('new')}
+                                        className="absolute inset-y-0 right-3 flex items-center text-gray-500"
+                                        aria-label={showPassword.new ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                                    >
+                                        {showPassword.new ? <EyeOff size={18} /> : <Eye size={18} />}
+                                    </button>
+                                </div>
+                                <p className="text-xs text-gray-500">Mínimo 8 caracteres.</p>
+                            </div>
+
+                            <div className="space-y-1">
+                                <label className="block text-sm font-medium text-gray-700">Confirmar contraseña</label>
+                                <div className="relative">
+                                    <input
+                                        type={showPassword.confirm ? 'text' : 'password'}
+                                        value={passwordForm.confirm}
+                                        onChange={(e) => handlePasswordInputChange('confirm', e.target.value)}
+                                        className="w-full p-3 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-200"
+                                        placeholder="Repite la nueva contraseña"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => togglePasswordVisibility('confirm')}
+                                        className="absolute inset-y-0 right-3 flex items-center text-gray-500"
+                                        aria-label={showPassword.confirm ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                                    >
+                                        {showPassword.confirm ? <EyeOff size={18} /> : <Eye size={18} />}
+                                    </button>
+                                </div>
+                            </div>
+
+                            {passwordError && <p className="text-sm text-red-600">{passwordError}</p>}
+
+                            <div className="flex justify-end gap-3 pt-2">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        resetPasswordState();
+                                        setIsPasswordModalOpen(false);
+                                    }}
+                                    className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handlePasswordSubmit}
+                                    disabled={passwordLoading}
+                                    className="px-4 py-2 rounded-lg bg-[#F40009] text-white font-semibold hover:bg-red-700 transition-colors disabled:opacity-70 flex items-center gap-2"
+                                >
+                                    {passwordLoading && <Loader2 size={18} className="animate-spin" />}
+                                    Guardar Cambios
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

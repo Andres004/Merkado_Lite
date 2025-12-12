@@ -20,3 +20,12 @@ export const updateUser = async (ci: string, user: any) => {
     const updatedUser = await instance.put(`/user/${ci}`, user);
     return updatedUser.data;
 }
+
+
+export const changePassword = async (payload: {
+  currentPassword: string;
+  newPassword: string;
+}) => {
+  const response = await instance.patch('/user/change-password', payload);
+  return response.data;
+};
