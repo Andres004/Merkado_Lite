@@ -1,9 +1,11 @@
-import { Controller, Get, Post, Put, Delete, Patch, Param, Body, Query, ParseIntPipe, UseGuards } from '@nestjs/common';
+//import { Controller, Get, Post, Put, Delete, Patch, Param, Body, Query, ParseIntPipe, UseGuards } from '@nestjs/common';
 import { UserService } from './user.service';
 import { User } from 'src/entity/user.entity';
 import { AuthGuard } from '@nestjs/passport'; // El guardia base de JWT
 import { RolesGuard } from 'src/auth/roles.guard'; // Tu guardia nuevo
 import { Roles } from 'src/auth/roles.decorator'; // Tu decorador
+import { Controller, Get, Post, Put, Delete, Patch, Param, Body, Query, ParseIntPipe, UseGuards, Req } from '@nestjs/common';
+import { Request } from 'express';
 
 @Controller('user')
 // 1. PROTECCIÓN GLOBAL: Nadie entra aquí sin Token
@@ -52,5 +54,15 @@ export class UserController {
   @Roles('Administrador')
   async deleteUser(@Param('id_usuario') id_usuario: string) {
     return this.userService.deleteUser(Number(id_usuario));
+  }
+
+  @Patch('change-password')
+  async changePassword(
+    @Req() req: Request & { user?: any },
+    @Body() body: { currentPassword: string; newPassword: string },
+  ) {
+    // JwtStrategy devuelve el usuario completo, así que aquí existe req.user.id_usuario
+    const userId = req.user?.id_usuario;
+    return this.userService.changePassword(userId, body.currentPassword, body.newPassword);
   }
 }

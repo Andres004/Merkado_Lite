@@ -1,4 +1,5 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException } from "@nestjs/common";
+//import { Injectable, NotFoundException, ConflictException, BadRequestException } from "@nestjs/common";
+import { Injectable, NotFoundException, ConflictException, BadRequestException, UnauthorizedException } from "@nestjs/common";
 import { AppDataSource } from "src/data-source";
 import { User } from "src/entity/user.entity";
 import { UserRole } from "src/entity/userrole.entity";
@@ -180,4 +181,31 @@ export class UserService {
         await this.getUserRepo().update(id_usuario, userUpdate);
         return this.getUserById(id_usuario);
     }
+
+    
+    async changePassword(id_usuario: number, currentPassword: string, newPassword: string) {
+        if (!id_usuario) throw new BadRequestException('Usuario no válido');
+        if (!currentPassword || !newPassword) throw new BadRequestException('Campos incompletos');
+        if (newPassword.length < 8) throw new BadRequestException('La nueva contraseña debe tener al menos 8 caracteres');
+
+        const repo = this.getUserRepo();
+
+        const user = await repo
+            .createQueryBuilder('user')
+            .addSelect('user.password') // porque está select:false
+            .where('user.id_usuario = :id', { id: id_usuario })
+            .getOne();
+
+        if (!user) throw new NotFoundException(`Usuario con ID ${id_usuario} no encontrado`);
+
+        const ok = await bcrypt.compare(currentPassword, user.password);
+        if (!ok) throw new UnauthorizedException('Contraseña actual incorrecta');
+
+        const salt = await bcrypt.genSalt(10);
+        user.password = await bcrypt.hash(newPassword, salt);
+
+        await repo.save(user);
+
+        return { message: 'Contraseña actualizada correctamente' };
+        }
 }
