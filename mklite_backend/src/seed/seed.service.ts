@@ -295,17 +295,24 @@ export class SeedService implements OnModuleInit {
       ) VALUES
         (1, 'Admin', 'Principal', '10000001', 'admin@mklite.com', ?, '70000001', 'Calle Admin 123', 'activo', 1, NOW()),
         (2, 'Carlos', 'Repartidor', '10000002', 'repartidor@mklite.com', ?, '70000002', 'Zona Repartidores', 'activo', 0, NOW()),
-        (3, 'Lucía', 'Cliente', '10000003', 'cliente@mklite.com', ?, '70000003', 'Zona Clientes', 'activo', 0, NOW())
+        (3, 'Lucía', 'Cliente', '10000003', 'cliente@mklite.com', ?, '70000003', 'Zona Clientes', 'activo', 0, NOW()),
+        (4, 'Andrés', 'Mendoza', '10000004', 'andres@mklite.com', ?, '70000004', 'Barrio Lomas 55', 'activo', 0, NOW()),
+        (5, 'Valeria', 'Soto', '10000005', 'valeria@mklite.com', ?, '70000005', 'Residencial Norte 22', 'activo', 0, NOW()),
+        (6, 'Diego', 'Rivas', '10000006', 'diego@mklite.com', ?, '70000006', 'Condominio Central 3B', 'activo', 0, NOW())
       ON DUPLICATE KEY UPDATE email = VALUES(email);
     `,
-    [adminPass, repartidorPass, clientePass],
+
+    [adminPass, repartidorPass, clientePass, clientePass, clientePass, clientePass],
   );
 
   await AppDataSource.query(`
     INSERT INTO usuario_rol (id_usuario, id_rol) VALUES
       (1, 1),
       (2, 2),
-      (3, 3)
+      (3, 3),
+      (4, 3),
+      (5, 3),
+      (6, 3)
     ON DUPLICATE KEY UPDATE id_rol = VALUES(id_rol);
   `);
 
@@ -442,20 +449,6 @@ export class SeedService implements OnModuleInit {
       return;
     }
 
-    // 6.1) Pedido
-    await AppDataSource.query(`
-      INSERT INTO pedido (
-        id_pedido, id_usuario_cliente, tipo_pedido, metodo_pago, estado,
-        fecha_creacion, fecha_actualizacion, subtotal, costo_envio, total,
-        direccion_entrega, tipo_entrega, es_reserva, fecha_hora_programada,
-        id_descuento_aplicado
-      ) VALUES
-        (1, 3, 'delivery', 'tarjeta', 'en_camino',
-         '2025-02-01 10:00:00', '2025-02-01 10:15:00',
-         33.00, 5.00, 38.00,
-         'Zona Clientes, Calle Falsa 123', 'express', 0, NULL, 1)
-      ON DUPLICATE KEY UPDATE estado = VALUES(estado);
-    `);
 
     // 6.2) Obtener lotes usados
     const [loteManzana] = await AppDataSource.query(`SELECT id_lote FROM lote WHERE id_producto = ? LIMIT 1`, [
@@ -470,29 +463,200 @@ export class SeedService implements OnModuleInit {
       return;
     }
 
-    // 6.3) Pedido_item
-    await AppDataSource.query(
-      `
-      INSERT INTO pedido_item (
-        id_pedido, id_producto, id_lote, cantidad, precio_unitario
-      ) VALUES
-        (1, ?, ?, 2, 10.00),
-        (1, ?, ?, 1, 13.00)
-      ON DUPLICATE KEY UPDATE cantidad = VALUES(cantidad);
-      `,
-      [manzana.id_producto, loteManzana.id_lote, coca.id_producto, loteCoca.id_lote],
-    );
+    const pedidos = [
+      {
+        id: 1,
+        clienteId: 3,
+        estado: 'en_camino',
+        fecha_creacion: '2025-02-01 10:00:00',
+        fecha_actualizacion: '2025-02-01 10:15:00',
+        subtotal: 33,
+        costo_envio: 5,
+        total: 38,
+        direccion: 'Zona Clientes, Calle Falsa 123',
+        envio: {
+          id: 1,
+          sector: 'Zona Sur',
+          estado: 'en_camino',
+          fecha_salida: '2025-02-01 10:20:00',
+          fecha_entrega: null,
+          minutos_espera: 5,
+          calificacion: null,
+        },
+      },
+      {
+        id: 2,
+        clienteId: 4,
+        estado: 'entregado',
+        fecha_creacion: '2025-01-20 09:00:00',
+        fecha_actualizacion: '2025-01-20 12:45:00',
+        subtotal: 45,
+        costo_envio: 5,
+        total: 50,
+        direccion: 'Barrio Lomas 55',
+        envio: {
+          id: 2,
+          sector: 'Zona Norte',
+          estado: 'entregado',
+          fecha_salida: '2025-01-20 09:30:00',
+          fecha_entrega: '2025-01-20 12:30:00',
+          minutos_espera: 3,
+          calificacion: 5,
+        },
+      },
+      {
+        id: 3,
+        clienteId: 5,
+        estado: 'fallido',
+        fecha_creacion: '2025-01-22 08:30:00',
+        fecha_actualizacion: '2025-01-22 11:10:00',
+        subtotal: 28,
+        costo_envio: 5,
+        total: 33,
+        direccion: 'Residencial Norte 22',
+        envio: {
+          id: 3,
+          sector: 'Zona Norte',
+          estado: 'fallido',
+          fecha_salida: '2025-01-22 09:00:00',
+          fecha_entrega: '2025-01-22 10:55:00',
+          minutos_espera: 10,
+          calificacion: null,
+        },
+      },
+      {
+        id: 4,
+        clienteId: 6,
+        estado: 'entregado',
+        fecha_creacion: '2025-01-25 14:00:00',
+        fecha_actualizacion: '2025-01-25 16:45:00',
+        subtotal: 52,
+        costo_envio: 5,
+        total: 57,
+        direccion: 'Condominio Central 3B',
+        envio: {
+          id: 4,
+          sector: 'Zona Centro',
+          estado: 'entregado',
+          fecha_salida: '2025-01-25 14:20:00',
+          fecha_entrega: '2025-01-25 16:30:00',
+          minutos_espera: 4,
+          calificacion: 4,
+        },
+      },
+      {
+        id: 5,
+        clienteId: 4,
+        estado: 'asignado',
+        fecha_creacion: '2025-02-02 09:10:00',
+        fecha_actualizacion: '2025-02-02 09:35:00',
+        subtotal: 30,
+        costo_envio: 5,
+        total: 35,
+        direccion: 'Barrio Lomas 55',
+        envio: {
+          id: 5,
+          sector: 'Zona Norte',
+          estado: 'asignado',
+          fecha_salida: '2025-02-02 09:40:00',
+          fecha_entrega: null,
+          minutos_espera: 2,
+          calificacion: null,
+        },
+      },
+      {
+        id: 6,
+        clienteId: 5,
+        estado: 'entregado',
+        fecha_creacion: '2025-01-28 17:00:00',
+        fecha_actualizacion: '2025-01-28 19:20:00',
+        subtotal: 36,
+        costo_envio: 5,
+        total: 41,
+        direccion: 'Residencial Norte 22',
+        envio: {
+          id: 6,
+          sector: 'Zona Norte',
+          estado: 'entregado',
+          fecha_salida: '2025-01-28 17:20:00',
+          fecha_entrega: '2025-01-28 18:50:00',
+          minutos_espera: 6,
+          calificacion: 5,
+        },
+      },
+    ];
 
-    // 6.4) Envío
-    await AppDataSource.query(`
-      INSERT INTO envio (
-        id_envio, id_pedido, id_repartidor, sector, estado_envio,
-        fecha_salida, fecha_entrega, minutos_espera, calificacion_cliente
-      ) VALUES
-        (1, 1, 2, 'Zona Sur', 'en_camino',
-         '2025-02-01 10:20:00', NULL, 5, NULL)
-      ON DUPLICATE KEY UPDATE estado_envio = VALUES(estado_envio);
-    `);
+    for (const pedido of pedidos) {
+      await AppDataSource.query(
+        `
+        INSERT INTO pedido (
+          id_pedido, id_usuario_cliente, tipo_pedido, metodo_pago, estado,
+          fecha_creacion, fecha_actualizacion, subtotal, costo_envio, total,
+          direccion_entrega, tipo_entrega, es_reserva, fecha_hora_programada,
+          id_descuento_aplicado
+        ) VALUES
+          (?, ?, 'delivery', 'tarjeta', ?,
+           ?, ?,
+           ?, ?, ?,
+           ?, 'express', 0, NULL, 1)
+        ON DUPLICATE KEY UPDATE
+          estado = VALUES(estado),
+          fecha_actualizacion = VALUES(fecha_actualizacion);
+        `,
+        [
+          pedido.id,
+          pedido.clienteId,
+          pedido.estado,
+          pedido.fecha_creacion,
+          pedido.fecha_actualizacion,
+          pedido.subtotal,
+          pedido.costo_envio,
+          pedido.total,
+          pedido.direccion,
+        ],
+      );
+
+      await AppDataSource.query(
+        `
+        INSERT INTO pedido_item (
+          id_pedido, id_producto, id_lote, cantidad, precio_unitario
+        ) VALUES
+          (?, ?, ?, 2, 10.00),
+          (?, ?, ?, 1, 13.00)
+        ON DUPLICATE KEY UPDATE cantidad = VALUES(cantidad);
+        `,
+        [
+          pedido.id,
+          manzana.id_producto,
+          loteManzana.id_lote,
+          pedido.id,
+          coca.id_producto,
+          loteCoca.id_lote,
+        ],
+      );
+
+      await AppDataSource.query(
+        `
+        INSERT INTO envio (
+          id_envio, id_pedido, id_repartidor, sector, estado_envio,
+          fecha_salida, fecha_entrega, minutos_espera, calificacion_cliente
+        ) VALUES
+          (?, ?, 2, ?, ?,
+           ?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE estado_envio = VALUES(estado_envio), fecha_entrega = VALUES(fecha_entrega);
+        `,
+        [
+          pedido.envio.id,
+          pedido.id,
+          pedido.envio.sector,
+          pedido.envio.estado,
+          pedido.envio.fecha_salida,
+          pedido.envio.fecha_entrega,
+          pedido.envio.minutos_espera,
+          pedido.envio.calificacion,
+        ],
+      );
+    }
 
     console.log('Pedido y envío sembrados.');
   }
