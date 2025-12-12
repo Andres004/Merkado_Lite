@@ -20,8 +20,8 @@ export class Shipment {
     @Column({ length: 30 })
     estado_envio: string; 
 
-    @Column({ nullable: true })
-    fecha_salida: Date;
+    @Column({ type: 'datetime', nullable: true })
+    fecha_salida: Date | null;
 
     @Column({ nullable: true })
     fecha_entrega: Date;
