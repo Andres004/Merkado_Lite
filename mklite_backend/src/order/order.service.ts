@@ -105,10 +105,26 @@ export class OrderService {
     async getOrderById(id_pedido: number): Promise<Order> {
         const order = await this.getOrderRepository().findOne({
             where: { id_pedido },
-            relations: ['items', 'items.product'] 
+            relations: ['items', 'items.product']
         });
         if (!order) throw new NotFoundException(`Pedido con ID ${id_pedido} no encontrado.`);
         return order;
+    }
+
+    async getAllOrders(estado?: string): Promise<Order[]> {
+        const qb = this.getOrderRepository()
+            .createQueryBuilder('order')
+            .leftJoinAndSelect('order.items', 'items')
+            .leftJoinAndSelect('items.product', 'product')
+            .leftJoinAndSelect('order.client', 'client')
+            .leftJoinAndSelect('order.shipment', 'shipment')
+            .orderBy('order.fecha_creacion', 'DESC');
+
+        if (estado) {
+            qb.where('LOWER(order.estado) = :estado', { estado: estado.toLowerCase() });
+        }
+
+        return qb.getMany();
     }
 
     async cancelOrder(id_pedido: number): Promise<Order> {
