@@ -1,6 +1,6 @@
 // app/services/inventory.service.ts
 import { instance } from "../utils/axios";
-import { InventoryModel, CreateBatchDto, SupplierModel, ProductShort } from "../models/inventory.model";
+import { InventoryModel, CreateBatchDto, SupplierModel, ProductShort, BatchModel } from "../models/inventory.model";
 
 // Obtener todo el inventario (Para la tabla)
 export const getAllInventoryService = async (): Promise<InventoryModel[]> => {
@@ -30,5 +30,10 @@ export const getProductsListService = async (): Promise<ProductShort[]> => {
 
 export const getSuppliersListService = async (): Promise<SupplierModel[]> => {
   const response = await instance.get('/supplier');
+  return response.data;
+};
+
+export const getBatchesByProductService = async (id_producto: number): Promise<BatchModel[]> => {
+  const response = await instance.get(`/batch/product/${id_producto}`);
   return response.data;
 };
