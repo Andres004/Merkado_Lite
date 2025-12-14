@@ -75,12 +75,12 @@ export class UserService {
         
         // Lógica de asignación automática de Rol
         if (status === true) {
-            // 1. Buscar si existe el rol 'Administrador' en la DB
-            let adminRole = await this.roleRepository.findOneBy({ nombre: 'Administrador' });
+            // 1. Buscar si existe el rol 'ADMIN' en la DB
+            let adminRole = await this.roleRepository.findOneBy({ nombre: 'ADMIN' });
             
             // Si no existe (porque limpiaste la DB), lo creamos al vuelo para que no falle
             if (!adminRole) {
-                adminRole = this.roleRepository.create({ nombre: 'Administrador' });
+                adminRole = this.roleRepository.create({ nombre: 'ADMIN' });
                 adminRole = await this.roleRepository.save(adminRole);
             }
 

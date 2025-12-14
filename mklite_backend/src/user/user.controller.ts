@@ -15,14 +15,14 @@ export class UserController {
 
   // Solo un Admin puede crear usuarios directamente (o quitar este endpoint si solo usas /auth/register)
   @Post()
-  @Roles('Administrador') 
+  @Roles('ADMIN') 
   async createUser(@Body() user: User) {
     return this.userService.createUser(user);
   }
 
   // Solo un Admin puede promover a otro Admin (HU-F22)
   @Patch('/:id_usuario/set-principal')
-  @Roles('Administrador')
+  @Roles('ADMIN')
   async setPrincipalAdmin(
     @Param('id_usuario', ParseIntPipe) id_usuario: number,
     @Body() body: { status: boolean }
@@ -32,7 +32,7 @@ export class UserController {
 
   // Admin y Ventas pueden ver usuarios
   @Get() 
-  @Roles('Administrador', 'Ventas')
+  @Roles('ADMIN', 'Ventas')
   async getAllUsers(
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 10
@@ -51,7 +51,7 @@ export class UserController {
   }
 
   @Delete('/:id_usuario')
-  @Roles('Administrador')
+  @Roles('ADMIN')
   async deleteUser(@Param('id_usuario') id_usuario: string) {
     return this.userService.deleteUser(Number(id_usuario));
   }

@@ -13,19 +13,19 @@ export class InventoryController {
 
     // NUEVO: Endpoint para la tabla de gestión (Admin/Almacén)
     @Get()
-    @Roles('Administrador', 'Almacén', 'Ventas')
+    @Roles('ADMIN', 'Almacén', 'Ventas')
     async getAllInventory() {
         return await this.inventoryService.getAllInventory();
     }
 
     @Get('/:id_producto')
-    @Roles('Administrador', 'Almacén', 'Ventas')
+    @Roles('ADMIN', 'Almacén', 'Ventas')
     async getInventory(@Param('id_producto', ParseIntPipe) id_producto: number) {
         return await this.inventoryService.getInventoryByProductId(id_producto);
     }
 
     @Post('/:id_producto')
-    @Roles('Administrador', 'Almacén')
+    @Roles('ADMIN', 'Almacén')
     async createOrUpdateInventory(
         @Param('id_producto', ParseIntPipe) id_producto: number, 
         @Body() inventory: Partial<Inventory>
@@ -34,7 +34,7 @@ export class InventoryController {
     }
 
     @Put('/stock/:id_producto')
-    @Roles('Administrador', 'Almacén')
+    @Roles('ADMIN', 'Almacén')
     async updateStockLevel(
         @Param('id_producto', ParseIntPipe) id_producto: number,
         @Body('stock_disponible') stock_disponible: number
