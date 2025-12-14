@@ -31,3 +31,13 @@ export interface SupplierModel {
   id_proveedor: number;
   nombre: string;
 }
+
+export interface BatchModel {
+  id_lote: number | string;
+  fecha_recepcion?: string;
+  fecha_vencimiento: string;
+  costo_unitario: number;
+  cantidad_inicial: number;
+  cantidad_disponible: number;
+  estado_lote: string;
+}
