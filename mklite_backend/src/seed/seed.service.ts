@@ -373,29 +373,25 @@ export class SeedService implements OnModuleInit {
 
     await AppDataSource.query(`
       INSERT INTO descuento (
-        id_descuento, fecha_inicio, fecha_final, codigo_cupon,
-        porcentaje_descuento, monto_fijo, estado_de_oferta
+        id_descuento, nombre, fecha_inicio, fecha_final, codigo_cupon,
+        porcentaje_descuento, monto_fijo, monto_minimo_compra,
+        estado_de_oferta, aplica_a
       ) VALUES
-        (1, '2025-02-01 00:00:00', '2025-03-01 23:59:59', 'VERANO10',
-         10.00, 0.00, 1)
-      ON DUPLICATE KEY UPDATE codigo_cupon = VALUES(codigo_cupon);
+        (1, 'Cupón Verano', '2025-02-01 00:00:00', '2025-03-01 23:59:59', 'VERANO10',
+         10.00, 0.00, 0.00, 1, 'ALL')
+      ON DUPLICATE KEY UPDATE
+        nombre = VALUES(nombre),
+        fecha_inicio = VALUES(fecha_inicio),
+        fecha_final = VALUES(fecha_final),
+        codigo_cupon = VALUES(codigo_cupon),
+        porcentaje_descuento = VALUES(porcentaje_descuento),
+        monto_fijo = VALUES(monto_fijo),
+        monto_minimo_compra = VALUES(monto_minimo_compra),
+        estado_de_oferta = VALUES(estado_de_oferta),
+        aplica_a = VALUES(aplica_a);
     `);
 
-    const coca = await this.findProductByName('Coca-Cola 3L');
-    if (!coca) {
-      console.log('Producto Coca-Cola 3L no encontrado para descuento_producto.');
-      return;
-    }
-
-    await AppDataSource.query(
-      `
-      INSERT INTO descuento_producto (id_descuento, id_producto) VALUES
-        (1, ?)
-      ON DUPLICATE KEY UPDATE id_producto = VALUES(id_producto);
-      `,
-      [coca.id_producto],
-    );
-
+    
     console.log('Descuentos sembrados.');
   }
 
