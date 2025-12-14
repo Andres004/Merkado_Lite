@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import AdminSidebar from '../../components/AdminSidebar';
-import { PlusCircle, X } from 'lucide-react';
+import { AlertTriangle, PlusCircle, X } from 'lucide-react';
 import { CategoryModel, ProductModel } from '../../models/product.model';
 import { createDiscount, deleteDiscount, getDiscounts, updateDiscount } from '../../services/discount.service';
 import { getAllProducts } from '../../services/product.service';
@@ -76,6 +76,10 @@ export default function AdminDescuentosPage() {
     const [selectedProductSearch, setSelectedProductSearch] = useState('');
     const [saving, setSaving] = useState(false);
     const [editingDiscount, setEditingDiscount] = useState<DiscountModel | null>(null);
+    const [deleteTarget, setDeleteTarget] = useState<DiscountModel | null>(null);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [deleting, setDeleting] = useState(false);
+    const cancelDeleteButtonRef = useRef<HTMLButtonElement | null>(null);
 
     const filteredProducts = useMemo(() => {
         if (!selectedProductSearch) return products;
@@ -106,6 +110,37 @@ export default function AdminDescuentosPage() {
         loadDiscounts();
         loadCatalogs();
     }, []);
+
+    useEffect(() => {
+        const shouldLockScroll = showModal || isDeleteModalOpen;
+        const previousOverflow = document.body.style.overflow;
+
+        if (shouldLockScroll) {
+            document.body.style.overflow = 'hidden';
+        }
+
+        return () => {
+            document.body.style.overflow = previousOverflow;
+        };
+    }, [isDeleteModalOpen, showModal]);
+
+    useEffect(() => {
+        if (!isDeleteModalOpen) return;
+
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                closeDeleteModal();
+            }
+        };
+
+        document.addEventListener('keydown', handleKeyDown);
+        cancelDeleteButtonRef.current?.focus();
+
+        return () => {
+            document.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [isDeleteModalOpen]);
+
 
     const resetForm = () => {
         setForm({ ...defaultFormState });
@@ -163,15 +198,29 @@ export default function AdminDescuentosPage() {
         }
     };
 
-    const handleDelete = async (discount: DiscountModel) => {
-        const confirmed = confirm(`¿Eliminar el descuento "${discount.nombre}"?`);
-        if (!confirmed) return;
+    const openDeleteConfirmation = (discount: DiscountModel) => {
+        setDeleteTarget(discount);
+        setIsDeleteModalOpen(true);
+    };
+
+    const closeDeleteModal = () => {
+        setIsDeleteModalOpen(false);
+        setDeleteTarget(null);
+        setDeleting(false);
+    };
+
+    const confirmDelete = async () => {
+        if (!deleteTarget) return;
+        setDeleting(true);
         try {
-            await deleteDiscount(discount.id_descuento);
+            //await deleteDiscount(discount.id_descuento);
+            await deleteDiscount(deleteTarget.id_descuento);
             await loadDiscounts();
+            closeDeleteModal();
         } catch (error) {
             console.error('Error al eliminar descuento', error);
             alert('No se pudo eliminar el descuento');
+            setDeleting(false);
         }
     };
 
@@ -507,6 +556,53 @@ export default function AdminDescuentosPage() {
         );
     };
 
+    const renderDeleteModal = () => {
+        if (!isDeleteModalOpen || !deleteTarget) return null;
+
+        return (
+            <div
+                className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm px-4"
+                onClick={closeDeleteModal}
+            >
+                <div
+                    role="dialog"
+                    aria-modal="true"
+                    className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 text-center"
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <div className="flex justify-center mb-4">
+                        <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center">
+                            <AlertTriangle className="text-red-600" size={36} />
+                        </div>
+                    </div>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-2">¿Estás seguro?</h3>
+                    <p className="text-gray-700 mb-1">
+                        Estás a punto de eliminar permanentemente el descuento “{deleteTarget.nombre}”.
+                    </p>
+                    <p className="text-sm text-gray-500 mb-6">Esta acción no se puede deshacer.</p>
+                    <div className="flex flex-col sm:flex-row gap-3 mt-4">
+                        <button
+                            onClick={confirmDelete}
+                            disabled={deleting}
+                            className="flex-1 rounded-full bg-[#F40009] text-white font-semibold py-3 shadow hover:bg-red-700 transition disabled:opacity-60"
+                        >
+                            {deleting ? 'Eliminando…' : 'Sí, Eliminar'}
+                        </button>
+                        <button
+                            ref={cancelDeleteButtonRef}
+                            onClick={closeDeleteModal}
+                            disabled={deleting}
+                            className="flex-1 rounded-full border border-gray-300 text-gray-700 font-semibold py-3 bg-white hover:bg-gray-50 transition disabled:opacity-60"
+                        >
+                            No, Cancelar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+
     const renderScopeLabel = (discount: DiscountModel) => {
         if (discount.aplica_a === 'ALL') return 'Todos los productos';
         if (discount.aplica_a === 'CATEGORY') return `Categorías: ${(discount.categorias || []).map((c) => c.nombre).join(', ')}`;
@@ -588,7 +684,8 @@ export default function AdminDescuentosPage() {
                                                             Editar
                                                         </button>
                                                         <button
-                                                            onClick={() => handleDelete(d)}
+                                                            //onClick={() => handleDelete(d)}
+                                                            onClick={() => openDeleteConfirmation(d)}
                                                             className="text-red-500 hover:text-red-700 transition duration-150 whitespace-nowrap"
                                                         >
                                                             Eliminar
@@ -605,6 +702,7 @@ export default function AdminDescuentosPage() {
                 </div>
             </div>
             {renderModal()}
+            {renderDeleteModal()}
         </div>
     );
 }
