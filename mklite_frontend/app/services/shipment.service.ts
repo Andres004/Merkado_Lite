@@ -22,6 +22,11 @@ export const getShipmentDetail = async (id_envio: number) => {
   return response.data;
 };
 
+export const getShipmentByOrder = async (id_pedido: number) => {
+  const response = await instance.get(`/shipment/order/${id_pedido}`);
+  return response.data;
+};
+
 export const markShipmentDelivered = async (id_envio: number, calificacion_cliente?: number) => {
   const response = await instance.patch(`/shipment/${id_envio}/delivered`, {
     calificacion_cliente,
