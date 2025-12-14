@@ -1,5 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany, JoinTable } from 'typeorm';
 import { ProductCategory } from './productcategory.entity';
+import { DiscountCategory } from './discountcategory.entity';
 
 @Entity('categoria')
 export class Category {
@@ -14,4 +15,6 @@ export class Category {
 
     @OneToMany(() => ProductCategory, (pc) => pc.categoria)
     productCategories: ProductCategory[];
+    @OneToMany(() => DiscountCategory, (dc) => dc.category)
+    discountCategories: DiscountCategory[];
 }

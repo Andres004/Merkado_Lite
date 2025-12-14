@@ -1,13 +1,16 @@
 import { Body, Controller, Delete, Get, Param, Post, Put, ParseIntPipe } from '@nestjs/common';
 import { Discount } from 'src/entity/discount.entity';
 import { DiscountService } from './discount.service';
+import { CreateDiscountDto } from './dto/create-discount.dto';
+import { UpdateDiscountDto } from './dto/update-discount.dto';
 
 @Controller('discount')
 export class DiscountController {
   constructor(private readonly discountService: DiscountService) {}
 
   @Post()
-  async createDiscount(@Body() discount: Discount) {
+  //async createDiscount(@Body() discount: Discount) {
+  async createDiscount(@Body() discount: CreateDiscountDto) {
     return await this.discountService.createDiscount(discount);
   }
 
@@ -27,7 +30,11 @@ export class DiscountController {
   }
 
   @Put('/:id_descuento')
-  async updateDiscount(@Param('id_descuento', ParseIntPipe) id_descuento: number, @Body() updateData: Partial<Discount>) {
+  //async updateDiscount(@Param('id_descuento', ParseIntPipe) id_descuento: number, @Body() updateData: Partial<Discount>) {
+  async updateDiscount(
+    @Param('id_descuento', ParseIntPipe) id_descuento: number,
+    @Body() updateData: UpdateDiscountDto,
+  ) {
     return await this.discountService.updateDiscount(id_descuento, updateData);
   }
 
