@@ -21,6 +21,10 @@ export const updateUser = async (ci: string, user: any) => {
     return updatedUser.data;
 }
 
+export const getUserById = async (id_usuario: number) => {
+  const response = await instance.get(`/user/${id_usuario}`);
+  return response.data;
+}
 
 export const changePassword = async (payload: {
   currentPassword: string;

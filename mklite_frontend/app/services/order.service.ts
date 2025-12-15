@@ -1,8 +1,8 @@
 import { instance } from "../utils/axios";
 
-export const getOrders = async (estado?: string) => {
+export const getOrders = async (params?: { estado?: string; fecha?: string }) => {
   const response = await instance.get('/order', {
-    params: estado ? { estado } : undefined,
+    params,
   });
   return response.data;
 };
