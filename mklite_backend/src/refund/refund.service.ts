@@ -41,7 +41,14 @@ export class RefundService {
         fecha: new Date()
     });
     
-    return await this.refundRepository.save(refund);
+    
+    const savedRefund = await this.refundRepository.save(refund);
+
+    pedido.estado = 'devuelto';
+    pedido.fecha_actualizacion = new Date();
+    await this.orderRepository.save(pedido);
+
+    return savedRefund;
   }
 
   async findAll(): Promise<Refund[]> {

@@ -24,6 +24,7 @@ export class RefundItemService {
   }
 
   async create(refundItemData: Partial<RefundItem>): Promise<RefundItem> {
+    const reingresarStock = Boolean((refundItemData as any)?.reingresar_stock);
     const refund = await this.refundRepository.findOne({
       where: { id_devolucion: refundItemData.id_devolucion }
     });
@@ -47,7 +48,12 @@ export class RefundItemService {
 
     // Lógica de Negocio (CU-21/HU-F26): Mover a stock dañado/anulado
     const inventory = await this.inventoryService.getInventoryByProductId(savedItem.id_producto);
-    inventory.stock_danado = (inventory.stock_danado || 0) + savedItem.cantidad;
+    //inventory.stock_danado = (inventory.stock_danado || 0) + savedItem.cantidad;
+    if (reingresarStock) {
+      inventory.stock_disponible = (inventory.stock_disponible || 0) + savedItem.cantidad;
+    } else {
+      inventory.stock_danado = (inventory.stock_danado || 0) + savedItem.cantidad;
+    }
     await this.inventoryService.setInventory(savedItem.id_producto, inventory);
 
     return savedItem;
