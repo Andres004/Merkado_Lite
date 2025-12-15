@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Patch, Param, Body, Query, ParseIntPipe, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Patch, Param, Body, Query, ParseIntPipe, UseGuards, Req, UnauthorizedException } from '@nestjs/common';
 import { UserService } from './user.service';
 import { User } from 'src/entity/user.entity';
 import { AuthGuard } from '@nestjs/passport';
@@ -10,6 +10,13 @@ import { Request } from 'express';
 @UseGuards(AuthGuard('jwt'), RolesGuard)
 export class UserController {
   constructor(private readonly userService: UserService) {}
+
+  @Get('profile')
+  async getProfile(@Req() req: Request & { user?: any }) {
+    const userId = req.user?.id_usuario;
+    if (!userId) throw new UnauthorizedException('Usuario no autenticado');
+    return this.userService.getProfile(userId);
+  }
 
   @Post()
   @Roles('ADMIN')
@@ -46,6 +53,14 @@ export class UserController {
   async updateUser(@Param('id_usuario') id_usuario: string, @Body() userUpdate: Partial<User> & { id_rol?: number }) {
     return this.userService.updateUser(Number(id_usuario), userUpdate);
   }
+
+  @Patch('profile')
+  async updateProfile(@Req() req: Request & { user?: any }, @Body() userUpdate: Partial<User>) {
+    const userId = req.user?.id_usuario;
+    if (!userId) throw new UnauthorizedException('Usuario no autenticado');
+    return this.userService.updateProfile(userId, userUpdate);
+  }
+
 
   @Patch('/:id_usuario/status')
   @Roles('ADMIN')

@@ -226,6 +226,11 @@ export class UserService {
         return user;
     }
 
+       async getProfile(id_usuario: number) {
+        return this.getUserById(id_usuario);
+    }
+
+
     async deleteUser(id_usuario: number) {
         const result = await this.getUserRepo().delete(id_usuario);
         if (result.affected === 0) throw new NotFoundException(`Usuario no encontrado`);
@@ -264,6 +269,31 @@ export class UserService {
 
         return this.getUserById(id_usuario);
     }
+
+        async updateProfile(id_usuario: number, userUpdate: UpdateUserPayload) {
+        const repo = this.getUserRepo();
+        const user = await repo.findOneBy({ id_usuario });
+        if (!user) throw new NotFoundException('Usuario no encontrado');
+
+        if (userUpdate.email && userUpdate.email !== user.email) {
+            const existing = await repo.findOne({ where: { email: userUpdate.email } });
+            if (existing && existing.id_usuario !== id_usuario) {
+                throw new ConflictException('El correo ya está en uso');
+            }
+        }
+
+        user.nombre = userUpdate.nombre ?? user.nombre;
+        user.apellido = userUpdate.apellido ?? user.apellido;
+        user.email = userUpdate.email ?? user.email;
+        user.ci = userUpdate.ci ?? user.ci;
+        user.telefono = userUpdate.telefono ?? user.telefono;
+        user.direccion = userUpdate.direccion ?? user.direccion;
+
+        await repo.save(user);
+
+        return this.getUserById(id_usuario);
+    }
+
 
     async changePassword(id_usuario: number, currentPassword: string, newPassword: string) {
         if (!id_usuario) throw new BadRequestException('Usuario no válido');
