@@ -1,10 +1,14 @@
++14
+-1
+
 import api from '../utils/axios'; // instancia de Axios configurada
 import { ProductModel } from '../models/product.model';
 
 
 // URLs base de tu backend
-const PRODUCT_URL = '/product'; 
+const PRODUCT_URL = '/product';
 const PRODUCT_CATEGORY_URL = '/productcategory/category';
+const PRODUCT_SEARCH_URL = '/product/search';
 
 
 export const getAllProducts = async (): Promise<ProductModel[]> => {
@@ -15,6 +19,18 @@ export const getAllProducts = async (): Promise<ProductModel[]> => {
     } catch (error) {
         console.error("Error al obtener productos:", error);
         return []; 
+    }
+}
+
+export const searchProducts = async (term: string): Promise<ProductModel[]> => {
+    try {
+        const response = await api.get<ProductModel[]>(PRODUCT_SEARCH_URL, {
+            params: { q: term }
+        });
+        return response.data;
+    } catch (error) {
+        console.error("Error al buscar productos:", error);
+        return [];
     }
 }
 
