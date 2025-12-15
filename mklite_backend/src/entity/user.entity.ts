@@ -5,7 +5,8 @@ import { Chat } from './chat.entity';
 import { Message } from './message.entity';
 import { Order } from './order.entity';
 import { Refund } from './refund.entity';
-import { UserPenalty } from './userpenalty.entity'; 
+import { UserPenalty } from './userpenalty.entity';
+import { Favorite } from './favorite.entity';
 
 @Entity('usuario')
 export class User {
@@ -65,4 +66,7 @@ export class User {
 
     @OneToMany(() => UserPenalty, (penalty) => penalty.user)
     penalties: UserPenalty[];
+
+    @OneToMany(() => Favorite, (favorite) => favorite.user)
+    favorites: Favorite[];
 }

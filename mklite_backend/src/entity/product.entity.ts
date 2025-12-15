@@ -6,7 +6,8 @@ import { Batch } from './batch.entity';
 import { ProductCategory } from './productcategory.entity';
 import { OrderItem } from './orderitem.entity';
 import { RefundItem } from './refunditem.entity';
-import { DiscountProduct } from './discountproduct.entity'; // <--- NUEVO IMPORT
+import { DiscountProduct } from './discountproduct.entity'; 
+import { Favorite } from './favorite.entity';
 
 @Entity('producto') 
 export class Product {
@@ -48,4 +49,8 @@ export class Product {
     
     @OneToMany(() => DiscountProduct, (dp) => dp.product)
     discountProducts: DiscountProduct[];
+
+    
+    @OneToMany(() => Favorite, (favorite) => favorite.product)
+    favorites: Favorite[];
 }
