@@ -1,66 +1,80 @@
 "use client"; // ⬅️ Necesario para saber en qué URL estamos
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation'; // Hook para saber la URL actual
-import { ChevronUp, CheckCircle2 } from 'lucide-react'; 
-
-// Lista de Categorías con sus Slugs (URLs) correctos
-// Deben coincidir con los que definimos en tu mapa de categorías
-const categories = [
-  { name: "Frutas y Verduras", slug: "frutas-y-verduras" },
-  { name: "Carnes", slug: "carnes" },
-  { name: "Lácteos", slug: "lacteos" },
-  { name: "Bebidas", slug: "bebidas" },
-  { name: "Snacks", slug: "snacks" },
-  { name: "Mascotas", slug: "mascotas" },
-  { name: "Panadería", slug: "panaderia" },
-  { name: "Cuidado del Hogar", slug: "cuidado-del-hogar" },
-  { name: "Cuidado Personal", slug: "cuidado-personal" },
-  { name: "Congelados", slug: "congelados" },
-  { name: "Cuidado del Bebé", slug: "cuidado-del-bebe" },
-  { name: "Fiambres y Embutidos", slug: "fiambres-y-embutidos" },
-];
+import { ChevronUp, CheckCircle2 } from 'lucide-react';
+import { CategoryModel } from '../models/product.model';
+import { getAllCategories } from '../services/category.service';
 
 const ProductSidebar = () => {
-  const pathname = usePathname(); // Obtenemos la URL actual (ej: /categoria/bebidas)
+  const pathname = usePathname(); // Obtenemos la URL actual (ej: /categoria/5)
+  const [categories, setCategories] = useState<CategoryModel[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      setLoading(true);
+      const data = await getAllCategories();
+      setCategories(data);
+      setLoading(false);
+    };
+
+    fetchCategories();
+  }, []);
+
+  const activeCategoryId = (() => {
+    const lastSegment = pathname.split('/').filter(Boolean).pop();
+    if (!lastSegment) return null;
+    const numericId = Number(lastSegment.split('-')[0]);
+    return Number.isNaN(numericId) ? null : numericId;
+  })();
 
   return (
     <div className="w-full bg-white p-5 sticky top-4 shadow-sm border border-gray-100 rounded-xl">
-      
+
       {/* SECCIÓN CATEGORÍAS */}
       <div className="mb-8 pb-6 border-b border-gray-100">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-bold text-gray-800">Categorías</h3>
           <ChevronUp size={18} className="text-gray-400" />
         </div>
-        
-        <ul className="space-y-1">
-          {categories.map((cat, index) => {
-            // Verificamos si esta es la categoría activa
-            const isActive = pathname.includes(`/categoria/${cat.slug}`);
 
-            return (
-              <li key={index}>
-                <Link 
-                  href={`/categoria/${cat.slug}`}
-                  className={`
-                    flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all duration-200
-                    ${isActive 
-                        ? 'bg-red-50 text-[#F40009] font-bold shadow-sm' // Estilo Activo (Rojo Coca-Cola)
-                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' // Estilo Normal
-                    }
-                  `}
-                >
-                  <span>{cat.name}</span>
-                  
-                  {/* Si está activo, mostramos un pequeño check o círculo */}
-                  {isActive && <CheckCircle2 size={16} className="text-[#F40009]" />}
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+        {loading ? (
+          <ul className="space-y-2">
+            {[...Array(6)].map((_, index) => (
+              <li key={index} className="h-4 bg-gray-100 rounded animate-pulse" />
+            ))}
+          </ul>
+        ) : categories.length === 0 ? (
+          <p className="text-sm text-gray-500">No hay categorías disponibles.</p>
+        ) : (
+          <ul className="space-y-1">
+            {categories.map((cat) => {
+              const isActive = activeCategoryId === cat.id_categoria;
+
+              return (
+                <li key={cat.id_categoria}>
+                  <Link
+                    href={`/categoria/${cat.id_categoria}`}
+                    className={`
+                      flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all duration-200
+                      ${isActive
+                          ? 'bg-red-50 text-[#F40009] font-bold shadow-sm'
+                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                      }
+                    `}
+                  >
+                    <span>{cat.nombre}</span>
+
+                    {/* Si está activo, mostramos un pequeño check o círculo */}
+                    {isActive && <CheckCircle2 size={16} className="text-[#F40009]" />}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </div>
 
       {/* SECCIÓN PRECIO (Visual por ahora) */}

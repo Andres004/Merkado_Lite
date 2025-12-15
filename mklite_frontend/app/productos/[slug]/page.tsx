@@ -11,6 +11,7 @@ import { getProductById, getProductsByCategoryId } from '../../services/product.
 import { addToCartService } from '../../services/cart.service'; // <--- NUEVO SERVICIO
 import { ProductModel } from '../../models/product.model';
 import ProductCard from '../../components/ProductCard';
+import { useFavorites } from '../../context/FavoriteContext';
 
 export default function ProductDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   
@@ -22,13 +23,16 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
   const [relatedProducts, setRelatedProducts] = useState<ProductModel[]>([]);
   const [loading, setLoading] = useState(true);
   const [qty, setQty] = useState(1); // Estado para la cantidad a comprar
+  const { isFavorite, toggleFavorite } = useFavorites();
+
 
   // 2. CARGA DE DATOS
   useEffect(() => {
     const loadData = async () => {
       try {
         setLoading(true);
-        const productId = Number(slug);
+        //const productId = Number(slug);
+        const productId = Number(String(slug).split('-')[0]);
         
         if (isNaN(productId)) return; 
 
@@ -111,6 +115,12 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
 
   // 6. RENDERIZADO DE LA UI
   const categoryName = product.productCategories?.[0]?.categoria?.nombre || "General";
+  const favorite = product ? isFavorite(product.id_producto) : false;
+
+  const handleFavoriteToggle = async () => {
+    if (!product) return;
+    await toggleFavorite(product);
+  };
 
   return (
     <div className="bg-gray-50 pb-16">
@@ -213,8 +223,12 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
               </button>
 
               {/* Botón de Favoritos (Visual) */}
-              <button className="p-3 border border-gray-300 rounded-md text-gray-700 hover:bg-red-50 hover:text-red-600 transition">
-                <Heart size={20} />
+              <button
+                onClick={handleFavoriteToggle}
+                className={`p-3 border rounded-md transition ${favorite ? 'text-red-600 bg-red-50 border-red-200' : 'text-gray-700 border-gray-300 hover:bg-red-50 hover:text-red-600'}`}
+                aria-pressed={favorite}
+              >
+                <Heart size={20} fill={favorite ? 'currentColor' : 'none'} />
               </button>
             </div>
           </div>

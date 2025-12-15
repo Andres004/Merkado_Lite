@@ -30,6 +30,18 @@ const ProductCard = ({ product }: { product: ProductModel }) => {
     await toggleFavorite(product);
   };
 
+  const handleGoToDetail = () => {
+    const hasSession = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+
+    if (!hasSession) {
+      router.push('/login');
+      return;
+    }
+
+    router.push(`/producto/${product.id_producto}`);
+  };
+
+
 
   return (
     <div className="bg-white p-4 shadow-sm border border-gray-100 rounded-lg group transition duration-300 relative overflow-hidden flex flex-col h-full hover:shadow-xl">
@@ -110,7 +122,9 @@ const ProductCard = ({ product }: { product: ProductModel }) => {
           </div>
           
           {/* BOTÓN VERDE */}
-          <button 
+          
+          <button
+            onClick={handleGoToDetail}
             className="bg-green-500 hover:bg-green-600 text-white p-2.5 rounded-full transition duration-200 shadow-md hover:shadow-lg active:scale-95"
             title="Agregar al carrito"
           >
