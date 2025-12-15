@@ -17,6 +17,8 @@ export default function ProfileLayout({ children }: { children: React.ReactNode 
   const handleLogout = () => {
     localStorage.removeItem('authToken');
     localStorage.removeItem('userData');
+    document.cookie = 'authToken=; path=/; max-age=0;';
+    document.cookie = 'userRole=; path=/; max-age=0;';
     window.location.href = '/';
   };
 
