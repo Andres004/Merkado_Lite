@@ -14,6 +14,10 @@ export default function ProfileLayout({ children }: { children: React.ReactNode 
     { name: 'Mis Direcciones', href: '/perfil/direcciones', icon: MapPin },
   ];
 
+  const activeItem = menuItems.find((item) =>
+    pathname === item.href || pathname.startsWith(`${item.href}/`)
+  );
+
   const handleLogout = () => {
     localStorage.removeItem('authToken');
     localStorage.removeItem('userData');
@@ -28,7 +32,8 @@ export default function ProfileLayout({ children }: { children: React.ReactNode 
         
         {/* Breadcrumb simple */}
         <div className="text-sm text-gray-500 mb-6">
-          <Link href="/">Inicio</Link> {'>'} Mi Cuenta {'>'} <span className="text-red-600 font-semibold">Mi Perfil</span>
+          <Link href="/">Inicio</Link> {'>'} Mi Cuenta {'>'}{' '}
+          <span className="text-red-600 font-semibold">{activeItem?.name ?? 'Mi Perfil'}</span>
         </div>
 
         <div className="flex flex-col md:flex-row gap-8">
@@ -41,7 +46,8 @@ export default function ProfileLayout({ children }: { children: React.ReactNode 
               </div>
               <nav className="flex flex-col">
                 {menuItems.map((item) => {
-                  const isActive = pathname === item.href;
+                  
+                  const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
                   return (
                     <Link
                       key={item.name}
