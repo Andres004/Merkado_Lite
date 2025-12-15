@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, NotFoundException } from "@nestjs/common";
+import { Injectable, BadRequestException, NotFoundException, UnauthorizedException } from "@nestjs/common";
 import { AppDataSource } from "src/data-source"; 
 import { Repository } from "typeorm"; 
 import { Order } from "src/entity/order.entity";
@@ -108,11 +108,58 @@ export class OrderService {
     async getOrderById(id_pedido: number): Promise<Order> {
         const order = await this.getOrderRepository().findOne({
             where: { id_pedido },
-            relations: ['items', 'items.product']
+            relations: ['items', 'items.product', 'shipment']
         });
         if (!order) throw new NotFoundException(`Pedido con ID ${id_pedido} no encontrado.`);
         return order;
     }
+
+    async getOrdersByUser(userId: number, page: number = 1, limit: number = 10) {
+        const safePage = Math.max(1, page);
+        const safeLimit = Math.max(1, limit);
+
+        const qb = this.getOrderRepository()
+            .createQueryBuilder('order')
+            .leftJoinAndSelect('order.items', 'items')
+            .leftJoinAndSelect('items.product', 'product')
+            .where('order.id_usuario_cliente = :userId', { userId })
+            .orderBy('order.fecha_creacion', 'DESC')
+            .skip((safePage - 1) * safeLimit)
+            .take(safeLimit);
+
+        const [data, total] = await qb.getManyAndCount();
+
+        return {
+            data,
+            total,
+            page: safePage,
+            limit: safeLimit,
+            totalPages: Math.ceil(total / safeLimit) || 1,
+        };
+    }
+
+    async getOrderForUser(id_pedido: number, userId?: number, isAdmin: boolean = false): Promise<Order> {
+        if (!isAdmin && !userId) {
+            throw new UnauthorizedException('Usuario no autenticado');
+        }
+
+        const qb = this.getOrderRepository()
+            .createQueryBuilder('order')
+            .leftJoinAndSelect('order.items', 'items')
+            .leftJoinAndSelect('items.product', 'product')
+            .leftJoinAndSelect('order.shipment', 'shipment')
+            .where('order.id_pedido = :id_pedido', { id_pedido });
+
+        if (!isAdmin) {
+            qb.andWhere('order.id_usuario_cliente = :userId', { userId });
+        }
+
+        const order = await qb.getOne();
+        if (!order) throw new NotFoundException(`Pedido con ID ${id_pedido} no encontrado.`);
+
+        return order;
+    }
+
 
     
     async getAllOrders(estado?: string, fecha?: string): Promise<Order[]> {
