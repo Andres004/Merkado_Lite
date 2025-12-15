@@ -14,3 +14,10 @@ export const createRefundItem = async (payload: any) => {
   const response = await instance.post('/refundItems', payload);
   return response.data;
 };
+
+export const getRefundsByDateRange = async (fechaInicio: string, fechaFin: string) => {
+  const response = await instance.get('/refunds/date-range', {
+    params: { fechaInicio, fechaFin },
+  });
+  return response.data;
+};
