@@ -1,71 +1,87 @@
-// mklite_frontend/app/confirmacion/page.tsx
+import React from "react";
+import Link from "next/link";
 
-import React from 'react';
-import { CheckCircle } from 'lucide-react';
-import Link from 'next/link';
-
-
-// MOCK DATA
-const MOCK_ORDER_ID = '1045';
-const MOCK_TOTAL = 134.80;
+const MOCK_ORDER_ID = "1045";
+const MOCK_TOTAL = 134.8;
 
 export default function ConfirmationPage() {
   return (
-    <div className="bg-gray-50 min-h-[80vh] pb-12">
-        
-        {/* Breadcrumb (Según el diseño: Carrito > Confirmación Pedido) */}
-        <div className="bg-gray-100 py-3 border-b border-gray-200">
-            <div className="max-w-7xl mx-auto px-4 flex items-center space-x-2 text-sm text-gray-500">
-                <span className="font-semibold text-gray-800">Inicio</span>
-                <span>/</span>
-                <span className="font-semibold text-gray-800">Carrito</span>
-                <span>/</span>
-                <span className="font-semibold text-red-600">Confirmación Pedido</span>
-            </div>
+    <div className="bg-white min-h-screen">
+      {/* Banner superior (como en la imagen) */}
+      <div className="h-23 md:h-32 w-full overflow-hidden">
+        <div className="relative w-full h-full">
+          {/* Cambia esta ruta si tu banner está en otro lugar */}
+          <img
+            src="/images/bebe/crema.jpg"
+            alt="Banner"
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-black/35" />
         </div>
+      </div>
 
-        <div className="max-w-xl mx-auto px-4 py-20 text-center bg-white mt-12 rounded-lg shadow-xl">
-            
-            {/* Título y Checkmark */}
-            <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-6">¡Gracias por tu Pedido!</h1>
-            
-            <div className="flex justify-center mb-6">
-                {/* Usamos el ícono de verificación de lucide-react para simular la imagen */}
-                <CheckCircle size={80} className="text-green-500" /> 
-            </div>
-
-            {/* Mensaje de Confirmación */}
-            <div className="mb-10">
-                <p className="text-xl font-semibold text-gray-800 mb-2">
-                    Tu pedido # <span className="text-red-600">[{MOCK_ORDER_ID}]</span> ha sido recibido.
-                </p>
-                <p className="text-gray-600">
-                    Por favor, ten listo el monto de <span className="font-bold text-red-600">Bs. {MOCK_TOTAL.toFixed(2)}</span> en efectivo para el repartidor.
-                </p>
-            </div>
-
-            {/* Sección de Guardar Datos/Crear Cuenta (Para usuarios no logueados) */}
-            <div className="bg-gray-100 p-6 rounded-lg mb-10">
-                <h2 className="text-xl font-semibold text-gray-800 mb-3">¿Quieres guardar tus datos para la próxima?</h2>
-                <p className="text-gray-600 mb-4 text-sm">
-                    Estás a un paso. Ya tenemos tus datos guardados de esta compra. Solo necesitas crear una contraseña para finalizar tu cuenta.
-                </p>
-                <a href="/user?tab=register" className="text-red-600 font-semibold hover:text-red-700 text-sm">
-                    ¡Crear Cuenta y Guardar mi Pedido!
-                </a>
-            </div>
-
-            {/* Botón Volver al Inicio */}
-            <a href="/">
-                <button 
-                    type="button"
-                    className="bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-12 rounded-md shadow-lg transition duration-150"
-                >
-                    Volver al Inicio
-                </button>
-            </a>
-            
+      {/* Breadcrumb sobre el banner (simple) */}
+      <div className="max-w-7xl mx-auto px-4 -mt-8 md:-mt-9 relative z-10">
+        <div className="text-xs md:text-sm text-gray-200">
+          <span className="opacity-80">Inicio</span> <span className="opacity-80">/</span>{" "}
+          <span className="opacity-80">Carrito</span> <span className="opacity-80">/</span>{" "}
+          <span className="font-semibold text-white">Confirmación Pedido</span>
         </div>
+      </div>
+
+      {/* Contenido */}
+      <div className="max-w-3xl mx-auto px-4">
+        <div className="text-center pt-16 md:pt-20 pb-24">
+          <h1 className="text-2xl md:text-3xl font-semibold text-gray-800">
+            ¡Gracias por tu Pedido!
+          </h1>
+
+          {/* Check verde grande como la imagen */}
+          <div className="flex justify-center mt-8 mb-8">
+            <div className="w-20 h-20 md:w-24 md:h-24 rounded-full flex items-center justify-center">
+              <svg
+                viewBox="0 0 24 24"
+                className="w-20 h-20 md:w-24 md:h-24"
+                fill="none"
+              >
+                <path
+                  d="M20 6L9 17l-5-5"
+                  stroke="#22c55e"
+                  strokeWidth="2.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </div>
+          </div>
+
+          {/* Texto como la imagen */}
+          <p className="text-sm md:text-base text-gray-700">
+            Tu pedido{" "}
+            <span className="font-semibold">
+              #[ej: {MOCK_ORDER_ID}]
+            </span>{" "}
+            ha sido recibido.
+          </p>
+
+          <p className="text-sm md:text-base text-gray-600 mt-4">
+            Por favor, ten listo el monto de{" "}
+            <span className="font-semibold text-red-600">
+              Bs. {MOCK_TOTAL.toFixed(2)}
+            </span>{" "}
+            en efectivo para el repartidor.
+          </p>
+
+          {/* Botón rojo redondeado */}
+          <div className="mt-10">
+            <Link href="/">
+              <button className="bg-red-600 hover:bg-red-700 text-white font-semibold px-10 py-3 rounded-full transition shadow-sm">
+                Volver al Inicio
+              </button>
+            </Link>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
