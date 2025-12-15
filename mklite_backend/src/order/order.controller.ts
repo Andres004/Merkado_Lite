@@ -4,6 +4,7 @@ import { OrderService } from './order.service';
 export class ItemOrderDto {
     id_producto: number;
     cantidad: number;
+    precio_unitario?: number;
 }
 
 export class CreateOrderDto { 
@@ -15,6 +16,8 @@ export class CreateOrderDto {
     es_reserva?: boolean;
     fecha_hora_programada?: Date;
     id_descuento_aplicado?: number;
+    subtotal_override?: number;
+    total_override?: number;
 
     items: ItemOrderDto[]; 
 }
@@ -33,8 +36,11 @@ export class OrderController {
     }
 
     @Get()
-    async getAllOrders(@Query('estado') estado?: string) {
-        return this.orderService.getAllOrders(estado);
+    async getAllOrders(
+        @Query('estado') estado?: string,
+        @Query('fecha') fecha?: string,
+    ) {
+        return this.orderService.getAllOrders(estado, fecha);
     }
 
     @Get('/:id_pedido')

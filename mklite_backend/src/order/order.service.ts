@@ -25,10 +25,6 @@ export class OrderService {
     }
 
     async createOrder(dto: CreateOrderDto): Promise<Order> {
-        // solo efectivo
-        if (dto.metodo_pago !== 'efectivo') {
-            throw new BadRequestException('solo emn "efectivo".');
-        }
 
         const queryRunner = AppDataSource.createQueryRunner(); 
         await queryRunner.connect();
@@ -36,22 +32,29 @@ export class OrderService {
 
         try {
             const itemsConLotePromises = dto.items.map(async (itemDto) => {
-                return await this.batchService.getBatchesForSale(itemDto.id_producto, itemDto.cantidad);
+                const lotes = await this.batchService.getBatchesForSale(itemDto.id_producto, itemDto.cantidad);
+                return lotes.map(lote => ({
+                    ...lote,
+                    precio_unitario: itemDto.precio_unitario ?? lote.precio_unitario,
+                }));
             });
-            
+
             const itemsConLotes = await Promise.all(itemsConLotePromises);
-            const itemsFlattened = itemsConLotes.flat(); 
+            const itemsFlattened = itemsConLotes.flat();
 
-            const subtotal = itemsFlattened.reduce((sum, item) => sum + (item.cantidad_a_usar * item.precio_unitario), 0);
-            const costo_envio = dto.tipo_entrega === 'domicilio' ? 5.00 : 0.00; 
-            const total = subtotal + costo_envio;
-
+            const subtotalCalculado = itemsFlattened.reduce((sum, item) => sum + (item.cantidad_a_usar * item.precio_unitario), 0);
+            const costo_envio = dto.tipo_entrega === 'domicilio' ? 5.00 : 0.00;
+            const subtotal = dto.subtotal_override ?? subtotalCalculado;
+            const totalCalculado = subtotal + costo_envio;
+            const total = dto.total_override ?? totalCalculado;
+            
             const newOrder = this.getOrderRepository().create({
                 ...dto,
                 estado: 'procesando',
                 subtotal,
                 costo_envio,
                 total,
+                id_descuento_aplicado: dto.id_descuento_aplicado ?? undefined, //null
                 fecha_creacion: new Date(),
                 fecha_actualizacion: new Date(),
             });
@@ -111,7 +114,8 @@ export class OrderService {
         return order;
     }
 
-    async getAllOrders(estado?: string): Promise<Order[]> {
+    
+    async getAllOrders(estado?: string, fecha?: string): Promise<Order[]> {
         const qb = this.getOrderRepository()
             .createQueryBuilder('order')
             .leftJoinAndSelect('order.items', 'items')
@@ -122,6 +126,15 @@ export class OrderService {
 
         if (estado) {
             qb.where('LOWER(order.estado) = :estado', { estado: estado.toLowerCase() });
+        }
+
+        if (fecha) {
+            const parsedDate = new Date(fecha);
+            if (!isNaN(parsedDate.getTime())) {
+                qb.andWhere('DATE(order.fecha_creacion) = :fecha', {
+                    fecha: parsedDate.toISOString().slice(0, 10),
+                });
+            }
         }
 
         return qb.getMany();
