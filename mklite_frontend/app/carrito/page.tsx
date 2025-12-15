@@ -76,7 +76,7 @@ export default function CartPage() {
   }
 
   const subtotal = cart.totalEstimado || 0;
-  const total = subtotal + SHIPPING_COST;
+  const total = subtotal;
 
   return (
     <div className="bg-gray-50 py-10 min-h-screen">
@@ -183,10 +183,7 @@ export default function CartPage() {
                 <span>Subtotal:</span>
                 <span className="font-semibold">Bs. {subtotal.toFixed(2)}</span>
               </div>
-              <div className="flex justify-between">
-                <span>Costo de envío:</span>
-                <span className="font-semibold">Bs. {SHIPPING_COST.toFixed(2)}</span>
-              </div>
+              
             </div>
             
             <div className="flex justify-between text-lg font-bold text-gray-800 pt-4">
