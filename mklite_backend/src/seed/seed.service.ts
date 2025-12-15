@@ -41,19 +41,22 @@ export class SeedService implements OnModuleInit {
     // 5) Carrito + carrito_item
     await this.seedCarrito();
 
-    // 6) Pedido + pedido_item + envio
+    // 6) Favoritos de usuario
+    await this.seedFavoritos();
+
+    // 7) Pedido + pedido_item + envio
     await this.seedPedidoYEnvio();
 
-    // 7) Reembolso + devolucion_item
+    // 8) Reembolso + devolucion_item
     await this.seedReembolsoYDevolucion();
 
-    // 8) Chat + mensajes
+    // 9) Chat + mensajes
     await this.seedChatYMensajes();
 
-    // 9) Sanción de usuario
+    // 10) Sanción de usuario
     await this.seedSancionUsuario();
 
-    // 10) Alertas de stock
+    // 11) Alertas de stock
     await this.seedAlertasStock();
 
     console.log('Seed completado con éxito. Base de datos lista.');
@@ -453,7 +456,59 @@ export class SeedService implements OnModuleInit {
   }
 
   // ----------------------------------------------------------------
-  // 6) Pedido + pedido_item + envio
+  // 6) Favoritos de usuario
+  // ----------------------------------------------------------------
+  private async seedFavoritos() {
+    console.log('Sembrando favoritos...');
+
+    const manzana = await this.findProductByName('Manzana Roja 1kg');
+    const coca = await this.findProductByName('Coca-Cola 3L');
+    const pizza = await this.findProductByName('Pizza congelada');
+    const yogurt = await this.findProductByName('Yogurt Bebible 1L');
+    const pringles = await this.findProductByName('Pringles');
+    const lavandina = await this.findProductByName('Lavandina 1L');
+    const chorizo = await this.findProductByName('Chorizo parrillero');
+
+    if (!manzana || !coca || !pizza || !yogurt || !pringles || !lavandina || !chorizo) {
+      console.log('No se encontraron todos los productos necesarios para favoritos.');
+      return;
+    }
+
+    await AppDataSource.query(
+      `
+      INSERT INTO favorito (
+        id_favorito, id_usuario, id_producto, fecha_creacion
+      ) VALUES
+        (1, 3, ?, '2025-02-02 09:00:00'),
+        (2, 3, ?, '2025-02-02 09:05:00'),
+        (3, 3, ?, '2025-02-02 09:10:00'),
+        (4, 2, ?, '2025-02-03 08:00:00'),
+        (5, 2, ?, '2025-02-03 08:05:00'),
+        (6, 1, ?, '2025-02-04 10:00:00'),
+        (7, 1, ?, '2025-02-04 10:05:00')
+      ON DUPLICATE KEY UPDATE fecha_creacion = VALUES(fecha_creacion);
+      `,
+      [
+        manzana.id_producto,
+        coca.id_producto,
+        pizza.id_producto,
+        yogurt.id_producto,
+        pringles.id_producto,
+        lavandina.id_producto,
+        chorizo.id_producto,
+      ],
+    );
+
+    await AppDataSource.query(
+      `UPDATE inventario SET stock_disponible = 0 WHERE id_producto = ?;`,
+      [pizza.id_producto],
+    );
+
+    console.log('Favoritos sembrados.');
+  }
+
+  // ----------------------------------------------------------------
+  // 7) Pedido + pedido_item + envio
   // ----------------------------------------------------------------
   private async seedPedidoYEnvio() {
     console.log('Sembrando pedido y envío...');
