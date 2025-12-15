@@ -21,6 +21,7 @@ import { RefundItemModule } from './refunditem/refunditem.module';
 import { DiscountModule } from './discount/discount.module';
 import { DiscountProductModule } from './discountproduct/discountproduct.module';
 import { ChatModule } from './chat/chat.module';
+import { FavoriteModule } from './favorite/favorite.module';
 //
 import { SeedService } from './seed/seed.service'; // Importa el servicio
 // import { UserModule } from './user/user.module';
@@ -32,7 +33,7 @@ import { Category } from './entity/category.entity'; // Importar la entidad
   , UserroleModule, ProductCategoryModule, CategoryModule, InventoryModule, 
   BatchModule, StockAlertModule, SupplierModule, OrderModule, ShipmentModule,
   AuthModule, RefundModule, RefundItemModule, DiscountModule, DiscountProductModule,
-  ChatModule,],
+  ChatModule, FavoriteModule,],
   controllers: [AppController],
   providers: [AppService,SeedService],
 })
