@@ -1,26 +1,22 @@
-//import { Controller, Get, Post, Put, Delete, Patch, Param, Body, Query, ParseIntPipe, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Patch, Param, Body, Query, ParseIntPipe, UseGuards, Req } from '@nestjs/common';
 import { UserService } from './user.service';
 import { User } from 'src/entity/user.entity';
-import { AuthGuard } from '@nestjs/passport'; // El guardia base de JWT
-import { RolesGuard } from 'src/auth/roles.guard'; // Tu guardia nuevo
-import { Roles } from 'src/auth/roles.decorator'; // Tu decorador
-import { Controller, Get, Post, Put, Delete, Patch, Param, Body, Query, ParseIntPipe, UseGuards, Req } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
+import { RolesGuard } from 'src/auth/roles.guard';
+import { Roles } from 'src/auth/roles.decorator';
 import { Request } from 'express';
 
 @Controller('user')
-// 1. PROTECCIÓN GLOBAL: Nadie entra aquí sin Token
-@UseGuards(AuthGuard('jwt'), RolesGuard) 
+@UseGuards(AuthGuard('jwt'), RolesGuard)
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  // Solo un Admin puede crear usuarios directamente (o quitar este endpoint si solo usas /auth/register)
   @Post()
-  @Roles('ADMIN') 
-  async createUser(@Body() user: User) {
+  @Roles('ADMIN')
+  async createUser(@Body() user: any) {
     return this.userService.createUser(user);
   }
 
-  // Solo un Admin puede promover a otro Admin (HU-F22)
   @Patch('/:id_usuario/set-principal')
   @Roles('ADMIN')
   async setPrincipalAdmin(
@@ -30,14 +26,14 @@ export class UserController {
     return this.userService.setPrincipalAdmin(id_usuario, body.status);
   }
 
-  // Admin y Ventas pueden ver usuarios
-  @Get() 
+  @Get()
   @Roles('ADMIN', 'Ventas')
   async getAllUsers(
     @Query('page') page: number = 1,
-    @Query('limit') limit: number = 10
+    @Query('limit') limit: number = 10,
+    @Query('search') search?: string,
   ) {
-    return this.userService.getAllUsers(Number(page), Number(limit));
+    return this.userService.getAllUsers(Number(page), Number(limit), search);
   }
 
   @Get('/:id_usuario')
@@ -46,8 +42,18 @@ export class UserController {
   }
 
   @Put('/:id_usuario')
-  async updateUser(@Param('id_usuario') id_usuario: string, @Body() userUpdate: Partial<User>) {
+  @Roles('ADMIN')
+  async updateUser(@Param('id_usuario') id_usuario: string, @Body() userUpdate: Partial<User> & { id_rol?: number }) {
     return this.userService.updateUser(Number(id_usuario), userUpdate);
+  }
+
+  @Patch('/:id_usuario/status')
+  @Roles('ADMIN')
+  async updateStatus(
+    @Param('id_usuario', ParseIntPipe) id_usuario: number,
+    @Body() body: { estado_cuenta: string },
+  ) {
+    return this.userService.updateStatus(id_usuario, body.estado_cuenta);
   }
 
   @Delete('/:id_usuario')
@@ -61,7 +67,6 @@ export class UserController {
     @Req() req: Request & { user?: any },
     @Body() body: { currentPassword: string; newPassword: string },
   ) {
-    // JwtStrategy devuelve el usuario completo, así que aquí existe req.user.id_usuario
     const userId = req.user?.id_usuario;
     return this.userService.changePassword(userId, body.currentPassword, body.newPassword);
   }
