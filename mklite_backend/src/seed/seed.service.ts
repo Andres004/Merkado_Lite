@@ -460,8 +460,11 @@ export class SeedService implements OnModuleInit {
 
     const manzana = await this.findProductByName('Manzana Roja 1kg');
     const coca = await this.findProductByName('Coca-Cola 3L');
-    if (!manzana || !coca) {
-      console.log('Productos base no encontrados para pedido_item.');
+    const jamon = await this.findProductByName('Jamón Cerdo 200g');
+    const leche = await this.findProductByName('Leche Pil 1L');
+    const yogurt = await this.findProductByName('Yogurt Bebible 1L');
+    if (!manzana || !coca || !jamon || !leche || !yogurt) {
+    console.log('Productos base no encontrados para pedido_item.');
       return;
     }
 
@@ -474,10 +477,28 @@ export class SeedService implements OnModuleInit {
       coca.id_producto,
     ]);
 
-    if (!loteManzana || !loteCoca) {
+    const [loteJamon] = await AppDataSource.query(`SELECT id_lote FROM lote WHERE id_producto = ? LIMIT 1`, [
+      jamon.id_producto,
+    ]);
+    const [loteLeche] = await AppDataSource.query(`SELECT id_lote FROM lote WHERE id_producto = ? LIMIT 1`, [
+      leche.id_producto,
+    ]);
+    const [loteYogurt] = await AppDataSource.query(`SELECT id_lote FROM lote WHERE id_producto = ? LIMIT 1`, [
+      yogurt.id_producto,
+    ]);
+
+    if (!loteManzana || !loteCoca || !loteJamon || !loteLeche || !loteYogurt) {
       console.log('Lotes no encontrados para pedido_item.');
       return;
     }
+
+     const today = new Date();
+    const formatTodayTime = (hour: number, minute: number) => {
+      const date = new Date(today);
+      date.setHours(hour, minute, 0, 0);
+      return date.toISOString().slice(0, 19).replace('T', ' ');
+    };
+
 
     const pedidos = [
       {
@@ -663,6 +684,106 @@ export class SeedService implements OnModuleInit {
           repartidorId: null,
         },
       },
+      {
+        id: 10,
+        clienteId: 3,
+        estado: 'pendiente',
+        fecha_creacion: formatTodayTime(8, 30),
+        fecha_actualizacion: formatTodayTime(8, 30),
+        subtotal: 48,
+        costo_envio: 5,
+        total: 53,
+        direccion: 'Zona Clientes, Calle Falsa 123',
+        envio: {
+          id: 10,
+          sector: 'Zona Centro',
+          estado: 'pendiente',
+          fecha_salida: null,
+          fecha_entrega: null,
+          minutos_espera: null,
+          calificacion: null,
+          repartidorId: null,
+        },
+        items: [
+          { productoId: manzana.id_producto, loteId: loteManzana.id_lote, cantidad: 3, precio: 10.0 },
+          { productoId: coca.id_producto, loteId: loteCoca.id_lote, cantidad: 1, precio: 13.0 },
+        ],
+      },
+      {
+        id: 11,
+        clienteId: 4,
+        estado: 'procesando',
+        fecha_creacion: formatTodayTime(11, 15),
+        fecha_actualizacion: formatTodayTime(11, 25),
+        subtotal: 64,
+        costo_envio: 5,
+        total: 69,
+        direccion: 'Barrio Lomas 55',
+        envio: {
+          id: 11,
+          sector: 'Zona Sur',
+          estado: 'pendiente',
+          fecha_salida: null,
+          fecha_entrega: null,
+          minutos_espera: null,
+          calificacion: null,
+          repartidorId: null,
+        },
+        items: [
+          { productoId: leche.id_producto, loteId: loteLeche.id_lote, cantidad: 4, precio: 7.0 },
+          { productoId: jamon.id_producto, loteId: loteJamon.id_lote, cantidad: 2, precio: 16.5 },
+        ],
+      },
+      {
+        id: 12,
+        clienteId: 5,
+        estado: 'entregado',
+        fecha_creacion: formatTodayTime(14, 5),
+        fecha_actualizacion: formatTodayTime(15, 0),
+        subtotal: 72,
+        costo_envio: 5,
+        total: 77,
+        direccion: 'Residencial Norte 22',
+        envio: {
+          id: 12,
+          sector: 'Zona Norte',
+          estado: 'entregado',
+          fecha_salida: formatTodayTime(14, 15),
+          fecha_entrega: formatTodayTime(15, 0),
+          minutos_espera: 6,
+          calificacion: 5,
+          repartidorId: 2,
+        },
+        items: [
+          { productoId: yogurt.id_producto, loteId: loteYogurt.id_lote, cantidad: 3, precio: 10.0 },
+          { productoId: coca.id_producto, loteId: loteCoca.id_lote, cantidad: 2, precio: 13.0 },
+        ],
+      },
+      {
+        id: 13,
+        clienteId: 6,
+        estado: 'entregado',
+        fecha_creacion: formatTodayTime(17, 30),
+        fecha_actualizacion: formatTodayTime(17, 55),
+        subtotal: 90,
+        costo_envio: 5,
+        total: 95,
+        direccion: 'Condominio Central 3B',
+        envio: {
+          id: 13,
+          sector: 'Zona Centro',
+          estado: 'entregado',
+          fecha_salida: formatTodayTime(17, 40),
+          fecha_entrega: formatTodayTime(18, 15),
+          minutos_espera: 4,
+          calificacion: 4,
+          repartidorId: 2,
+        },
+        items: [
+          { productoId: manzana.id_producto, loteId: loteManzana.id_lote, cantidad: 4, precio: 10.0 },
+          { productoId: jamon.id_producto, loteId: loteJamon.id_lote, cantidad: 2, precio: 16.5 },
+        ],
+      },
     ];
 
     for (const pedido of pedidos) {
@@ -695,24 +816,29 @@ export class SeedService implements OnModuleInit {
         ],
       );
 
-      await AppDataSource.query(
-        `
-        INSERT INTO pedido_item (
-          id_pedido, id_producto, id_lote, cantidad, precio_unitario
-        ) VALUES
-          (?, ?, ?, 2, 10.00),
-          (?, ?, ?, 1, 13.00)
-        ON DUPLICATE KEY UPDATE cantidad = VALUES(cantidad);
-        `,
-        [
-          pedido.id,
-          manzana.id_producto,
-          loteManzana.id_lote,
-          pedido.id,
-          coca.id_producto,
-          loteCoca.id_lote,
-        ],
-      );
+       const itemsToInsert = pedido.items ?? [
+        { productoId: manzana.id_producto, loteId: loteManzana.id_lote, cantidad: 2, precio: 10.0 },
+        { productoId: coca.id_producto, loteId: loteCoca.id_lote, cantidad: 1, precio: 13.0 },
+      ];
+
+      for (const item of itemsToInsert) {
+        await AppDataSource.query(
+          `
+          INSERT INTO pedido_item (
+            id_pedido, id_producto, id_lote, cantidad, precio_unitario
+          ) VALUES
+            (?, ?, ?, ?, ?)
+          ON DUPLICATE KEY UPDATE cantidad = VALUES(cantidad), precio_unitario = VALUES(precio_unitario);
+          `,
+          [
+            pedido.id,
+            item.productoId,
+            item.loteId,
+            item.cantidad,
+            item.precio,
+          ],
+        );
+      }
 
       await AppDataSource.query(
         `
@@ -753,6 +879,11 @@ export class SeedService implements OnModuleInit {
       return;
     }
 
+    const today = new Date();
+    const refundDate = new Date(today);
+    refundDate.setHours(16, 0, 0, 0);
+    const refundDateStr = refundDate.toISOString().slice(0, 19).replace('T', ' ');
+
     await AppDataSource.query(`
       INSERT INTO reembolso (
         id_devolucion, id_usuario_vendedor, fecha, motivo,
@@ -763,6 +894,19 @@ export class SeedService implements OnModuleInit {
       ON DUPLICATE KEY UPDATE motivo = VALUES(motivo);
     `);
 
+     await AppDataSource.query(
+      `
+      INSERT INTO reembolso (
+        id_devolucion, id_usuario_vendedor, fecha, motivo,
+        monto_total, id_pedido
+      ) VALUES
+        (2, 1, ?, 'Cliente solicitó devolución parcial', 15.00, 11)
+      ON DUPLICATE KEY UPDATE fecha = VALUES(fecha), motivo = VALUES(motivo), monto_total = VALUES(monto_total);
+      `,
+      [refundDateStr],
+    );
+
+
     await AppDataSource.query(
       `
       INSERT INTO devolucion_item (
@@ -770,6 +914,17 @@ export class SeedService implements OnModuleInit {
       ) VALUES
         (1, ?, 1, 10.00)
       ON DUPLICATE KEY UPDATE cantidad = VALUES(cantidad);
+      `,
+      [manzana.id_producto],
+    );
+
+    await AppDataSource.query(
+      `
+      INSERT INTO devolucion_item (
+        id_devolucion, id_producto, cantidad, precio_unitario
+      ) VALUES
+        (2, ?, 1, 7.00)
+      ON DUPLICATE KEY UPDATE cantidad = VALUES(cantidad), precio_unitario = VALUES(precio_unitario);
       `,
       [manzana.id_producto],
     );
@@ -837,6 +992,11 @@ export class SeedService implements OnModuleInit {
       console.log('Productos base no encontrados para alerta_stock.');
       return;
     }
+
+     await AppDataSource.query(
+      `UPDATE inventario SET stock_disponible = 3, stock_minimo = 10 WHERE id_producto IN (?, ?);`,
+      [manzana.id_producto, jamon.id_producto],
+    );
 
     await AppDataSource.query(
       `
