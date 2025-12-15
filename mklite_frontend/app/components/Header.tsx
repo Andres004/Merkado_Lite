@@ -9,7 +9,7 @@ import LoginForm from './LoginForm';
 import RegisterForm from './RegisterForm';
 import { getCartByUserService } from '../services/cart.service';
 import { getAllCategories } from '../services/category.service';
-import { slugify } from '../utils/slugify';
+//import { slugify } from '../utils/slugify';
 
 const Header = () => {
   const router = useRouter();
@@ -187,7 +187,8 @@ const Header = () => {
                   categories.map((category) => (
                     <Link
                       key={category.id_categoria}
-                      href={`/categoria/${slugify(category.nombre)}`}
+                      
+                      href={`/categoria/${category.id_categoria}`}
                       className="block px-4 py-2 text-sm hover:bg-red-50 hover:text-red-600"
                     >
                       {category.nombre}
