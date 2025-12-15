@@ -1,33 +1,25 @@
-
-import React from 'react';
+"use client";
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { 
-  Carrot, Utensils, Drumstick, Wheat, 
-  BottleWine, Popcorn, Milk, Home, 
-  Droplet, Baby, Snowflake, PawPrint, ArrowRight 
-} from 'lucide-react'; 
-
-// Datos de las categorías y sus iconos
-const categoriesData = [
-  { name: "Frutas y Verduras", icon: Carrot },
-  { name: "Fiambres y Embutidos", icon: Utensils },
-  { name: "Carnes", icon: Drumstick },
-  { name: "Panaderia", icon: Wheat },
-  { name: "Bebidas", icon: BottleWine },
-  { name: "Snacks", icon: Popcorn },
-  { name: "Lacteos", icon: Milk },
-  { name: "Cuidado del Hogar", icon: Home },
-  { name: "Cuidado Personal", icon: Droplet },
-  { name: "Cuidado del Bebe", icon: Baby },
-  { name: "Congelados", icon: Snowflake },
-  { name: "Mascotas", icon: PawPrint },
-];
-
-// Función para generar "slugs" a partir del nombre
-const slugify = (text: string) =>
-  text.toLowerCase().replace(/ /g, "-").replace(/[^\w-]+/g, "");
+import { ArrowRight, ShoppingBag } from 'lucide-react';
+import { CategoryModel } from '../models/product.model';
+import { getAllCategories } from '../services/category.service';
+import { getCategoryIcon } from '../utils/categoryIcons';
 
 const CategoriesSection = () => {
+  const [categories, setCategories] = useState<CategoryModel[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      const data = await getAllCategories();
+      setCategories(data);
+      setLoading(false);
+    };
+
+    fetchCategories();
+  }, []);
+
   return (
     <section className="py-12 bg-white">
       <div className="max-w-7xl mx-auto px-4">
@@ -37,34 +29,46 @@ const CategoriesSection = () => {
             Categorías
           </h2>
           {/* Enlace "Ver todo" */}
-          <a href="#" className="flex items-center text-red-600 hover:text-red-700 font-semibold transition">
+          <Link href="/categorias" className="flex items-center text-red-600 hover:text-red-700 font-semibold transition">
             Ver todo
             <ArrowRight size={16} className="ml-1" />
-          </a>
+          </Link>
         </div>
 
         {/* Cuadrícula de Categorías */}
         <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-4">
-          {categoriesData.map((category, index) => (
-            <Link 
-              key={index} 
-              href={`/categoria/${slugify(category.name)}`}
-            
-              className="group flex flex-col items-center justify-center p-4 border border-gray-200 rounded-lg hover:shadow-xl transition duration-300 cursor-pointer h-32 bg-white hover:bg-[#F40009] hover:border-[#F40009]"
-            >
-              {/* Contenedor del Icono */}
-              <div className="p-3 mb-2">
-               
-                <category.icon size={32} className="text-gray-700 transition duration-300 group-hover:text-white" />
-              </div>
+          {loading ? (
+            [...Array(12)].map((_, index) => (
+              <div
+                key={index}
+                className="h-32 rounded-lg border border-gray-200 bg-gray-50 animate-pulse"
+              />
+            ))
+          ) : categories.length === 0 ? (
+            <p className="text-gray-500 text-sm col-span-full">No hay categorías disponibles en este momento.</p>
+          ) : (
+            categories.map((category) => {
+              const Icon = getCategoryIcon(category.nombre) ?? ShoppingBag;
 
-              {/* Nombre de la Categoría */}
-              <p className="text-sm text-center font-medium text-gray-700 transition duration-300 group-hover:text-white">
-                
-                {category.name}
-              </p>
-            </Link>
-          ))}
+              return (
+                <Link
+                  key={category.id_categoria}
+                  href={`/categoria/${category.id_categoria}`}
+                  className="group flex flex-col items-center justify-center p-4 border border-gray-200 rounded-lg hover:shadow-xl transition duration-300 cursor-pointer h-32 bg-white hover:bg-[#F40009] hover:border-[#F40009]"
+                >
+                  {/* Contenedor del Icono */}
+                  <div className="p-3 mb-2">
+                    <Icon size={32} className="text-gray-700 transition duration-300 group-hover:text-white" />
+                  </div>
+
+                  {/* Nombre de la Categoría */}
+                  <p className="text-sm text-center font-medium text-gray-700 transition duration-300 group-hover:text-white">
+                    {category.nombre}
+                  </p>
+                </Link>
+              );
+            })
+          )}
         </div>
       </div>
     </section>
