@@ -1,6 +1,17 @@
 import { CreateUserDto, PaginatedUsersResponse, UpdateUserDto, UserModel } from "../models/user.model";
 import { instance } from "../utils/axios";
 
+export const fetchCurrentUser = async () => {
+  const response = await instance.get<UserModel>('/user/profile');
+  return response.data;
+};
+
+export const updateCurrentUser = async (user: Partial<UserModel>) => {
+  const response = await instance.patch<UserModel>('/user/profile', user);
+  return response.data;
+};
+
+
 export const getUsers = async (params?: { page?: number; limit?: number; search?: string }) => {
     const users = await instance.get<PaginatedUsersResponse>('/user', { params });
     return users.data;
