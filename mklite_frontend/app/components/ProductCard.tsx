@@ -1,11 +1,17 @@
+'use client';
+
 import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ShoppingCart, Heart, Eye } from 'lucide-react';
 import { ProductModel } from '../models/product.model';
+import { useFavorites } from '../context/FavoriteContext';
+import { useRouter } from 'next/navigation';
 
 const ProductCard = ({ product }: { product: ProductModel }) => {
-  
+  const router = useRouter();
+  const { isFavorite, toggleFavorite, isAuthenticated } = useFavorites();
+  const favorite = isFavorite(product.id_producto);
   // -------------------------------------------------------
   // LÓGICA DE DESCUENTO (Adaptada a tu BD actual)
   // -------------------------------------------------------
@@ -16,6 +22,14 @@ const ProductCard = ({ product }: { product: ProductModel }) => {
   const oldPrice = undefined; // product.precio_antiguo (Si existiera en BD)
   const discountPercent = 0;  // Calculo automático si tuvieras oldPrice
   const isDiscounted = false; // Cambiar a: oldPrice && oldPrice > product.precio_venta;
+  const handleFavoriteClick = async () => {
+    if (!isAuthenticated) {
+      router.push('/login');
+      return;
+    }
+    await toggleFavorite(product);
+  };
+
 
   return (
     <div className="bg-white p-4 shadow-sm border border-gray-100 rounded-lg group transition duration-300 relative overflow-hidden flex flex-col h-full hover:shadow-xl">
@@ -29,11 +43,14 @@ const ProductCard = ({ product }: { product: ProductModel }) => {
 
       {/* 2. ICONOS DE INTERACCIÓN (Hover) */}
       <div className="absolute top-3 right-3 flex flex-col space-y-2 opacity-0 group-hover:opacity-100 transition-all duration-300 z-20 translate-x-4 group-hover:translate-x-0">
-        <button 
-            className="bg-white p-2 rounded-full shadow-md text-gray-600 hover:text-red-600 hover:bg-red-50 transition-colors"
+        <button
+            onClick={handleFavoriteClick}
+            className={`bg-white p-2 rounded-full shadow-md transition-colors ${favorite ? 'text-red-600 hover:bg-red-100' : 'text-gray-600 hover:text-red-600 hover:bg-red-50'}`}
             title="Añadir a favoritos"
+            aria-pressed={favorite}
         >
-          <Heart size={18} />
+          
+          <Heart size={18} fill={favorite ? 'currentColor' : 'none'} />
         </button>
         <Link 
             href={`/productos/${product.id_producto}`}
