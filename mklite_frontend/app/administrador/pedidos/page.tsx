@@ -17,7 +17,7 @@ import {
   getShipmentByOrder,
   markShipmentDelivered,
 } from "../../services/shipment.service";
-import { getUsers } from "../../services/user.service";
+import { getUsers, getUserById } from "../../services/user.service";
 
 interface ProductInfo {
   nombre_producto?: string;
@@ -165,28 +165,108 @@ const formatMoney = (value: unknown) => {
   return Number.isFinite(num) ? num.toFixed(2) : '0.00';
 };
 
+interface ConfirmModalProps {
+  isOpen: boolean;
+  title: string;
+  message: string;
+  description?: string;
+  confirmText: string;
+  cancelText: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+  loading?: boolean;
+}
+
+const ConfirmModal: React.FC<ConfirmModalProps> = ({
+  isOpen,
+  title,
+  message,
+  description,
+  confirmText,
+  cancelText,
+  onConfirm,
+  onCancel,
+  loading,
+}) => {
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onCancel();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onCancel]);
+
+  if (!isOpen) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 p-4"
+      role="dialog"
+      aria-modal="true"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onCancel();
+      }}
+    >
+      <div className="bg-white rounded-xl shadow-lg max-w-md w-full p-6">
+        <div className="flex flex-col items-center text-center space-y-3">
+          <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
+            <AlertTriangle className="text-red-600" size={28} />
+          </div>
+          <h3 className="text-xl font-bold text-gray-900">{title}</h3>
+          <p className="text-gray-700 font-semibold">{message}</p>
+          {description && <p className="text-gray-500 text-sm">{description}</p>}
+        </div>
+
+        <div className="mt-6 flex justify-end space-x-3">
+          <button
+            onClick={onCancel}
+            className="px-4 py-2 rounded-lg border text-gray-700 hover:bg-gray-50"
+            disabled={loading}
+          >
+            {cancelText}
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={loading}
+            className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-50"
+          >
+            {loading ? 'Procesando...' : confirmText}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function AdminPedidosPage() {
   const [orders, setOrders] = useState<OrderData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filtroEstado, setFiltroEstado] = useState("Todos");
-  const [filtroFecha, setFiltroFecha] = useState("DD/MM/AAAA");
+  const [filtroFecha, setFiltroFecha] = useState("");
   const [busqueda, setBusqueda] = useState("");
   const [detalleAbierto, setDetalleAbierto] = useState(false);
   const [detalleData, setDetalleData] = useState<OrderData | null>(null);
   const [detalleLoading, setDetalleLoading] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<OrderData | null>(null);
   const [drivers, setDrivers] = useState<UserData[]>([]);
+  const [driverNames, setDriverNames] = useState<Record<number, string>>({});
   const [driverSeleccionado, setDriverSeleccionado] = useState<number | null>(null);
   const [assignOpen, setAssignOpen] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [confirmCancelOpen, setConfirmCancelOpen] = useState(false);
+  const [pedidoACancelar, setPedidoACancelar] = useState<OrderData | null>(null);
 
-  const fetchOrders = async () => {
+  const fetchOrders = async (fecha?: string) => {
+    const effectiveDate = fecha ?? (filtroFecha || undefined);
     setLoading(true);
     setError(null);
     try {
-      const data = await getOrders();
+      const data = await getOrders(effectiveDate ? { fecha: effectiveDate } : undefined);
       setOrders(data || []);
     } catch (err) {
       setError("No se pudo cargar los pedidos. Intenta nuevamente.");
@@ -203,15 +283,61 @@ export default function AdminPedidosPage() {
         user.userRoles?.some((ur) => ur.role?.nombre?.toUpperCase() === "REPARTIDOR")
       );
       setDrivers(onlyDrivers);
+      const map = onlyDrivers.reduce<Record<number, string>>((acc, driver) => {
+        const fullName = `${driver.nombre || ""} ${driver.apellido || ""}`.trim();
+        if (driver.id_usuario) acc[driver.id_usuario] = fullName;
+        return acc;
+      }, {});
+      setDriverNames((prev) => ({ ...map, ...prev }));
     } catch (err) {
       // No bloquear la vista si falla
     }
   };
 
   useEffect(() => {
-    fetchOrders();
+    fetchOrders(filtroFecha || undefined);
+  }, [filtroFecha]);
+
+  useEffect(() => {
     fetchDrivers();
   }, []);
+
+  const ensureDriverName = async (id_repartidor?: number) => {
+    if (!id_repartidor || driverNames[id_repartidor]) return;
+    const cachedDriver = drivers.find((driver) => driver.id_usuario === id_repartidor);
+    if (cachedDriver) {
+      const fullName = `${cachedDriver.nombre || ""} ${cachedDriver.apellido || ""}`.trim();
+      setDriverNames((prev) => ({ ...prev, [id_repartidor]: fullName || `ID ${id_repartidor}` }));
+      return;
+    }
+
+    try {
+      const driver = await getUserById(id_repartidor);
+      const fullName = `${driver?.nombre || ""} ${driver?.apellido || ""}`.trim();
+      setDriverNames((prev) => ({ ...prev, [id_repartidor]: fullName || `ID ${id_repartidor}` }));
+    } catch (err) {
+      setDriverNames((prev) => ({ ...prev, [id_repartidor]: `ID ${id_repartidor}` }));
+    }
+  };
+
+  const getDriverName = (id_repartidor?: number) => {
+    if (!id_repartidor) return "No asignado";
+    return driverNames[id_repartidor] || `ID ${id_repartidor}`;
+  };
+
+  const normalizarFechaLocal = (fecha: Date) => {
+    return new Date(fecha.getTime() - fecha.getTimezoneOffset() * 60000)
+      .toISOString()
+      .slice(0, 10);
+  };
+
+  const coincideFecha = (pedido: OrderData) => {
+    if (!filtroFecha) return true;
+    if (!pedido.fecha_creacion) return false;
+    const fechaPedido = new Date(pedido.fecha_creacion);
+    if (Number.isNaN(fechaPedido.getTime())) return false;
+    return normalizarFechaLocal(fechaPedido) === filtroFecha;
+  };
 
   const estadosDisponibles = useMemo(() => {
     const estados = new Set<string>();
@@ -229,9 +355,9 @@ export default function AdminPedidosPage() {
           .toLowerCase()
           .includes(busqueda.toLowerCase());
 
-      return estadoMatch && busquedaMatch;
+      return estadoMatch && busquedaMatch && coincideFecha(pedido);
     });
-  }, [orders, filtroEstado, busqueda]);
+  }, [orders, filtroEstado, busqueda, filtroFecha]);
 
   const abrirDetalle = async (pedido: OrderData) => {
     setDetalleAbierto(true);
@@ -243,11 +369,14 @@ export default function AdminPedidosPage() {
         getOrderDetail(pedido.id_pedido),
         pedido.shipment ? Promise.resolve(pedido.shipment) : getShipmentByOrder(pedido.id_pedido).catch(() => null),
       ]);
+
+      const resolvedShipment = shipmentData ?? pedido.shipment ?? null;
       setDetalleData({
         ...pedido,
         ...orderData,
-        shipment: shipmentData ?? pedido.shipment ?? null,
+        shipment: resolvedShipment,
       });
+      await ensureDriverName(resolvedShipment?.id_repartidor);
     } catch (err) {
       setError("No se pudo cargar el detalle del pedido.");
     } finally {
@@ -279,18 +408,34 @@ export default function AdminPedidosPage() {
     }
   };
 
-  const confirmarCancelacion = async (pedido: OrderData) => {
+  const abrirCancelacion = (pedido: OrderData) => {
+    setPedidoACancelar(pedido);
+    setConfirmCancelOpen(true);
+    setError(null);
+    setSuccessMessage(null);
+  };
+
+  const confirmarCancelacion = async () => {
+    if (!pedidoACancelar) return;
     setActionLoading(true);
     setError(null);
     try {
-      await cancelOrder(pedido.id_pedido);
+      await cancelOrder(pedidoACancelar.id_pedido);
       setSuccessMessage("Pedido cancelado correctamente.");
-      await fetchOrders();
+      setConfirmCancelOpen(false);
+      setPedidoACancelar(null);
+      await fetchOrders(filtroFecha || undefined);
     } catch (err) {
       setError("No se pudo cancelar el pedido.");
     } finally {
       setActionLoading(false);
     }
+  };
+
+  const cerrarCancelacion = () => {
+    if (actionLoading) return;
+    setConfirmCancelOpen(false);
+    setPedidoACancelar(null);
   };
 
   const marcarEntregado = async (pedido: OrderData) => {
@@ -306,6 +451,14 @@ export default function AdminPedidosPage() {
     } finally {
       setActionLoading(false);
     }
+  };
+
+  const manejarCambioFecha = (value: string) => {
+    setFiltroFecha(value);
+  };
+
+  const limpiarFiltroFecha = () => {
+    setFiltroFecha("");
   };
 
   return (
@@ -368,14 +521,20 @@ export default function AdminPedidosPage() {
                 />
               </div>
 
-              <div className="relative w-full md:w-48">
+               <div className="flex w-full md:w-auto items-center gap-2">
                 <input
-                  type="text"
-                  placeholder="Filtrar por Fecha: DD/MM/AAAA"
+                  type="date"
                   value={filtroFecha}
-                  onChange={(e) => setFiltroFecha(e.target.value)}
-                  className="w-full py-2 px-4 border border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500 shadow-sm text-gray-700"
+                  onChange={(e) => manejarCambioFecha(e.target.value)}
+                  className="w-full md:w-48 border border-gray-300 rounded-lg px-3 py-2 shadow-sm focus:ring-red-500 focus:border-red-500"
                 />
+                <button
+                  onClick={limpiarFiltroFecha}
+                  className="px-3 py-2 text-sm border rounded-lg bg-gray-100 hover:bg-gray-200 disabled:opacity-50"
+                  disabled={!filtroFecha}
+                >
+                  Limpiar filtro
+                </button>
               </div>
             </div>
 
@@ -456,7 +615,7 @@ export default function AdminPedidosPage() {
                               formatEstadoClave(pedido.estado) !== "cancelado" &&
                               formatEstadoClave(pedido.estado) !== "anulado" && (
                                 <button
-                                  onClick={() => confirmarCancelacion(pedido)}
+                                  onClick={() => abrirCancelacion(pedido)}
                                   className="text-red-500 hover:text-red-700 transition duration-150 whitespace-nowrap text-xs sm:text-sm"
                                 >
                                   Cancelar Pedido
@@ -569,9 +728,7 @@ export default function AdminPedidosPage() {
                       <div>
                         <p className="text-gray-500">Repartidor</p>
                         <p className="font-semibold">
-                          {detalleData.shipment.id_repartidor
-                            ? `ID ${detalleData.shipment.id_repartidor}`
-                            : "No asignado"}
+                          {getDriverName(detalleData.shipment.id_repartidor)}
                         </p>
                       </div>
                       <div>
@@ -645,6 +802,21 @@ export default function AdminPedidosPage() {
           </div>
         </div>
       )}
+       <ConfirmModal
+        isOpen={confirmCancelOpen}
+        title="¿Anular Pedido?"
+        message={
+          pedidoACancelar?.id_pedido
+            ? `Estás a punto de eliminar permanentemente el pedido #${pedidoACancelar.id_pedido}.`
+            : "Estás a punto de eliminar permanentemente el pedido seleccionado."
+        }
+        description="Esta acción no se puede deshacer."
+        confirmText="Sí, Anular"
+        cancelText="No, Cancelar"
+        onCancel={cerrarCancelacion}
+        onConfirm={confirmarCancelacion}
+        loading={actionLoading}
+      />
     </div>
   );
 }
