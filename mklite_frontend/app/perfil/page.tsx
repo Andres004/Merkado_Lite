@@ -99,7 +99,7 @@ export default function ProfilePage() {
           </div>
 
           <Link
-            href="#"
+            href="/perfil/direcciones"
             className="text-red-600 text-sm font-medium hover:underline mt-4 inline-block"
           >
             Gestionar Direcciones
