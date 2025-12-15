@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Repository } from 'typeorm';
+import { Like, Repository } from 'typeorm';
 import { Product } from 'src/entity/product.entity'; // ajusta ruta según tu proyecto
 import { AppDataSource } from 'src/data-source';
 
@@ -23,7 +23,26 @@ export class ProductService {
     async getAllProducts(): Promise<Product[]> {
         return await this.productRepository.find({
             relations: [
-                'productCategories', 
+                'productCategories',
+                'productCategories.categoria'
+            ],
+        });
+    }
+
+    async searchProducts(query: string): Promise<Product[]> {
+        if (!query || query.trim().length === 0) {
+            return [];
+        }
+
+        const normalizedQuery = `%${query.trim()}%`;
+
+            return this.productRepository.find({
+                where: [
+                    { nombre: Like(normalizedQuery) },
+                    { descripcion: Like(normalizedQuery) }
+                ],
+            relations: [
+                'productCategories',
                 'productCategories.categoria'
             ],
         });
