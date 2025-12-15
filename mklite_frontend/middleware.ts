@@ -20,6 +20,15 @@ export function middleware(request: NextRequest) {
   const token = request.cookies.get('authToken')?.value;
   const role = request.cookies.get('userRole')?.value?.toUpperCase();
 
+    const isProfileRoute = pathname === '/perfil' || pathname.startsWith('/perfil/');
+
+  if (isProfileRoute && !token) {
+    const loginUrl = new URL('/login', request.url);
+    loginUrl.searchParams.set('redirectTo', pathname);
+    return NextResponse.redirect(loginUrl);
+  }
+
+
   const matchedRoute = roleProtectedRoutes.find(({ prefix }) =>
     pathname === prefix || pathname.startsWith(`${prefix}/`)
   );
