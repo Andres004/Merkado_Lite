@@ -298,11 +298,27 @@ export class SeedService implements OnModuleInit {
         (3, 'Lucía', 'Cliente', '10000003', 'cliente@mklite.com', ?, '70000003', 'Zona Clientes', 'activo', 0, NOW()),
         (4, 'Andrés', 'Mendoza', '10000004', 'andres@mklite.com', ?, '70000004', 'Barrio Lomas 55', 'activo', 0, NOW()),
         (5, 'Valeria', 'Soto', '10000005', 'valeria@mklite.com', ?, '70000005', 'Residencial Norte 22', 'activo', 0, NOW()),
-        (6, 'Diego', 'Rivas', '10000006', 'diego@mklite.com', ?, '70000006', 'Condominio Central 3B', 'activo', 0, NOW())
+        (6, 'Diego', 'Rivas', '10000006', 'diego@mklite.com', ?, '70000006', 'Condominio Central 3B', 'activo', 0, NOW()),
+        (7, 'Mariana', 'Quispe', '10000007', 'repartidor1@mklite.com', ?, '70000007', 'Av. Libertad 123', 'activo', 0, NOW()),
+        (8, 'Luis', 'Torres', '10000008', 'repartidor2@mklite.com', ?, '70000008', 'Calle Mayor 88', 'activo', 0, NOW()),
+        (9, 'Ana', 'Paredes', '10000009', 'repartidor3@mklite.com', ?, '70000009', 'Zona Sur 101', 'activo', 0, NOW()),
+        (10, 'Jorge', 'Vega', '10000010', 'repartidor4@mklite.com', ?, '70000010', 'Villa Nueva 45', 'activo', 0, NOW())
       ON DUPLICATE KEY UPDATE email = VALUES(email);
     `,
 
-    [adminPass, repartidorPass, clientePass, clientePass, clientePass, clientePass],
+    
+    [
+      adminPass,
+      repartidorPass,
+      clientePass,
+      clientePass,
+      clientePass,
+      clientePass,
+      repartidorPass,
+      repartidorPass,
+      repartidorPass,
+      repartidorPass,
+    ],
   );
 
   await AppDataSource.query(`
@@ -312,7 +328,11 @@ export class SeedService implements OnModuleInit {
       (3, 3),
       (4, 3),
       (5, 3),
-      (6, 3)
+      (6, 3),
+      (7, 2),
+      (8, 2),
+      (9, 2),
+      (10, 2)
     ON DUPLICATE KEY UPDATE id_rol = VALUES(id_rol);
   `);
 
