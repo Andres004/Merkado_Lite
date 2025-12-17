@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Like, Repository } from 'typeorm';
-import { Product } from 'src/entity/product.entity'; // ajusta ruta según tu proyecto
+import { Product } from 'src/entity/product.entity';
 import { AppDataSource } from 'src/data-source';
 
 @Injectable()
@@ -18,17 +18,19 @@ export class ProductService {
         return await this.productRepository.save(product);
     }
 
-    //MODIFICADO: Ahora carga las categorías asignadas
-    
     async getAllProducts(): Promise<Product[]> {
         return await this.productRepository.find({
             relations: [
                 'productCategories',
-                'productCategories.categoria'
+                'productCategories.categoria',
+                'inventory', // <--- IMPORTANTE: Para ver el stock
+                'discountProducts',
+                'discountProducts.discount'
             ],
         });
     }
 
+    // Método para buscar productos por nombre o descripción
     async searchProducts(query: string): Promise<Product[]> {
         if (!query || query.trim().length === 0) {
             return [];
@@ -36,26 +38,46 @@ export class ProductService {
 
         const normalizedQuery = `%${query.trim()}%`;
 
-            return this.productRepository.find({
-                where: [
-                    { nombre: Like(normalizedQuery) },
-                    { descripcion: Like(normalizedQuery) }
-                ],
+        return this.productRepository.find({
+            where: [
+                { nombre: Like(normalizedQuery) },
+                { descripcion: Like(normalizedQuery) }
+            ],
             relations: [
                 'productCategories',
-                'productCategories.categoria'
+                'productCategories.categoria',
+                'inventory', // <--- IMPORTANTE: Para ver el stock en la búsqueda
+                'discountProducts',
+                'discountProducts.discount'
             ],
         });
     }
 
-    //MODIFICADO: Ahora carga las categorías asignadas
-    
+    // Método para obtener productos con descuentos activos
+    async getProductsWithActiveDiscounts(): Promise<Product[]> {
+        const now = new Date();
+        
+        return await this.productRepository.createQueryBuilder('product')
+            .innerJoinAndSelect('product.discountProducts', 'dp')
+            .innerJoinAndSelect('dp.discount', 'd')
+            .leftJoinAndSelect('product.productCategories', 'pc')
+            .leftJoinAndSelect('pc.categoria', 'c')
+            .leftJoinAndSelect('product.inventory', 'inv')
+            .where('d.estado_de_oferta = :active', { active: true })
+            .andWhere('d.fecha_inicio <= :now', { now })
+            .andWhere('d.fecha_final >= :now', { now })
+            .getMany();
+    }
+
     async getProductById(id_producto: number): Promise<Product> {
         const product = await this.productRepository.findOne({
             where: { id_producto },
             relations: [
                 'productCategories',
-                'productCategories.categoria'
+                'productCategories.categoria',
+                'inventory', // <--- IMPORTANTE: Para ver el stock en el detalle
+                'discountProducts',
+                'discountProducts.discount'
             ],
         });
         
@@ -65,8 +87,6 @@ export class ProductService {
         return product;
     }
 
-    
-    //MODIFICADO: Ahora devuelve el producto actualizado con categorias
     async updateProduct(id_producto: number, updateData: Partial<Product>): Promise<Product> {
         const updateResult = await this.productRepository.update(id_producto, updateData);
         if (updateResult.affected === 0) {

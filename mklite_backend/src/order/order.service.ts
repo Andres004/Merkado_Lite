@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, NotFoundException, UnauthorizedException } from "@nestjs/common";
+import { Injectable, BadRequestException, NotFoundException } from "@nestjs/common";
 import { AppDataSource } from "src/data-source"; 
 import { Repository } from "typeorm"; 
 import { Order } from "src/entity/order.entity";
@@ -25,42 +25,60 @@ export class OrderService {
     }
 
     async createOrder(dto: CreateOrderDto): Promise<Order> {
-
         const queryRunner = AppDataSource.createQueryRunner(); 
         await queryRunner.connect();
         await queryRunner.startTransaction();
 
         try {
+            // 1. Obtener lotes disponibles para cada item
+            // Usamos Promise.all para resolver todas las búsquedas de lotes en paralelo
             const itemsConLotePromises = dto.items.map(async (itemDto) => {
-                const lotes = await this.batchService.getBatchesForSale(itemDto.id_producto, itemDto.cantidad);
+                const cantidadRequerida = Number(itemDto.cantidad);
+                const idProducto = Number(itemDto.id_producto);
+
+                if (cantidadRequerida <= 0) return []; // Protección contra cantidades 0 o negativas
+
+                // Esto buscará lotes y lanzará error si no hay stock suficiente
+                const lotes = await this.batchService.getBatchesForSale(idProducto, cantidadRequerida);
+                
                 return lotes.map(lote => ({
                     ...lote,
-                    precio_unitario: itemDto.precio_unitario ?? lote.precio_unitario,
+                    // Si el DTO trae precio, úsalo, si no, usa el costo del lote como referencia
+                    precio_unitario: Number(itemDto.precio_unitario ?? lote.precio_unitario),
                 }));
             });
-
-            const itemsConLotes = await Promise.all(itemsConLotePromises);
-            const itemsFlattened = itemsConLotes.flat();
-
-            const subtotalCalculado = itemsFlattened.reduce((sum, item) => sum + (item.cantidad_a_usar * item.precio_unitario), 0);
-            const costo_envio = dto.tipo_entrega === 'domicilio' ? 5.00 : 0.00;
-            const subtotal = dto.subtotal_override ?? subtotalCalculado;
-            const totalCalculado = subtotal + costo_envio;
-            const total = dto.total_override ?? totalCalculado;
             
+            const itemsConLotes = await Promise.all(itemsConLotePromises);
+            const itemsFlattened = itemsConLotes.flat(); 
+
+            if (itemsFlattened.length === 0 && dto.items.length > 0) {
+                 // Si había items pero no se asignó ninguno, algo salió mal
+                 throw new BadRequestException("No se pudieron asignar productos (Stock insuficiente o error en lotes)");
+            }
+
+            // 2. Calcular Totales
+            const subtotalCalculado = itemsFlattened.reduce((sum, item) => sum + (item.cantidad_a_usar * item.precio_unitario), 0);
+            const costo_envio = dto.tipo_entrega === 'domicilio' ? 5.00 : 0.00; 
+            
+            // Permitimos override si viene del frontend (opcional), sino usamos el calculado
+            const subtotal = dto.subtotal_override ?? subtotalCalculado;
+            const total = (dto.total_override ?? subtotal) + costo_envio;
+
+            // 3. Crear el Pedido (Entidad Order)
             const newOrder = this.getOrderRepository().create({
                 ...dto,
                 estado: 'procesando',
                 subtotal,
                 costo_envio,
                 total,
-                id_descuento_aplicado: dto.id_descuento_aplicado ?? undefined, //null
+                id_descuento_aplicado: dto.id_descuento_aplicado ?? undefined,
                 fecha_creacion: new Date(),
                 fecha_actualizacion: new Date(),
             });
 
             const savedOrder = await queryRunner.manager.save(Order, newOrder);
 
+            // 4. Crear los OrderItems (Detalle del pedido vinculado a lotes)
             const itemsToSave = itemsFlattened.map(item => {
                 const orderItem = new OrderItem();
                 orderItem.id_pedido = savedOrder.id_pedido;
@@ -73,22 +91,30 @@ export class OrderService {
             
             await queryRunner.manager.save(OrderItem, itemsToSave);
 
+            // 5. DESCONTAR STOCK (CRÍTICO)
             for (const item of itemsFlattened) {
+                // Restar del Inventario Global
                 await this.inventoryService.reduceStock(item.id_producto, item.cantidad_a_usar, queryRunner.manager);
+                
+                // Restar del Lote Específico
                 await this.batchService.reduceBatchStock(item.id_lote, item.cantidad_a_usar, queryRunner.manager);
             }
 
+            // 6. Generar Envío Inicial
             const newShipment = new Shipment();
             newShipment.id_pedido = savedOrder.id_pedido;
             newShipment.estado_envio = 'Pendiente'; 
             
             await queryRunner.manager.save(Shipment, newShipment);
 
+            // 7. Confirmar Transacción
             await queryRunner.commitTransaction();
             return savedOrder;
 
         } catch (error) {
+            // Si algo falla, revertimos TODO (nada se guarda, el stock no se toca)
             await queryRunner.rollbackTransaction();
+            console.error("Error creando pedido:", error);
             throw new BadRequestException(`Fallo en la creación del pedido: ${error.message}`); 
         } finally {
             await queryRunner.release();
@@ -108,12 +134,13 @@ export class OrderService {
     async getOrderById(id_pedido: number): Promise<Order> {
         const order = await this.getOrderRepository().findOne({
             where: { id_pedido },
-            relations: ['items', 'items.product', 'shipment']
+            relations: ['items', 'items.product', 'shipment'] 
         });
         if (!order) throw new NotFoundException(`Pedido con ID ${id_pedido} no encontrado.`);
         return order;
     }
 
+    // Funciones de consulta adicionales
     async getOrdersByUser(userId: number, page: number = 1, limit: number = 10) {
         const safePage = Math.max(1, page);
         const safeLimit = Math.max(1, limit);
@@ -139,10 +166,6 @@ export class OrderService {
     }
 
     async getOrderForUser(id_pedido: number, userId?: number, isAdmin: boolean = false): Promise<Order> {
-        if (!isAdmin && !userId) {
-            throw new UnauthorizedException('Usuario no autenticado');
-        }
-
         const qb = this.getOrderRepository()
             .createQueryBuilder('order')
             .leftJoinAndSelect('order.items', 'items')
@@ -150,7 +173,7 @@ export class OrderService {
             .leftJoinAndSelect('order.shipment', 'shipment')
             .where('order.id_pedido = :id_pedido', { id_pedido });
 
-        if (!isAdmin) {
+        if (!isAdmin && userId) {
             qb.andWhere('order.id_usuario_cliente = :userId', { userId });
         }
 
@@ -160,8 +183,6 @@ export class OrderService {
         return order;
     }
 
-
-    
     async getAllOrders(estado?: string, fecha?: string): Promise<Order[]> {
         const qb = this.getOrderRepository()
             .createQueryBuilder('order')
@@ -199,10 +220,10 @@ export class OrderService {
             });
 
             if (!order) throw new NotFoundException(`Pedido ${id_pedido} no encontrado.`);
-
             if (order.estado === 'anulado') throw new BadRequestException('El pedido ya está anulado.');
             if (order.estado === 'entregado') throw new BadRequestException('No se puede anular un pedido ya entregado.');
 
+            // Devolver productos al inventario
             for (const item of order.items) {
                 await this.inventoryService.increaseStock(item.id_producto, item.cantidad, queryRunner.manager);
                 await this.batchService.restoreBatchStock(item.id_lote, item.cantidad, queryRunner.manager);

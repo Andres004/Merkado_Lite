@@ -74,77 +74,33 @@ export class BatchService {
         return { message: `Lote ${id_lote} eliminado con éxito` };
     }
 
-    private async syncInventoryStock(id_producto: number) {
-        const activeSum = await this.batchRepository.sum('cantidad_disponible', { 
-            id_producto: id_producto,
-            estado_lote: 'activo'
-        });
-        const stockDisponible = activeSum || 0;
-
-        const expiredSum = await this.batchRepository.sum('cantidad_disponible', { 
-            id_producto: id_producto,
-            estado_lote: 'vencido'
-        });
-        const stockVencido = expiredSum || 0;
-
-        const damagedSum = await this.batchRepository.sum('cantidad_disponible', { 
-            id_producto: id_producto,
-            estado_lote: 'defectuoso'
-        });
-        const stockDanado = damagedSum || 0;
-
-        let inventory = await this.inventoryService.getInventoryByProductId(id_producto).catch(() => null);
-
-        if (!inventory) {
-            inventory = await this.inventoryService.setInventory(id_producto, {
-                stock_disponible: stockDisponible,
-                stock_vencido: stockVencido,
-                stock_danado: stockDanado,
-                stock_reservado: 0,
-                stock_minimo: 10 
-            });
-        } else {
-            inventory.stock_disponible = stockDisponible;
-            inventory.stock_vencido = stockVencido;
-            inventory.stock_danado = stockDanado;
-            inventory.ultima_actualizacion = new Date();
-            await this.inventoryService.setInventory(id_producto, inventory);
-        }
-
-        if (inventory.stock_disponible <= inventory.stock_minimo) {
-            const alerta = {
-                id_producto: id_producto,
-                tipo_alerta: 'Umbral mínimo',
-                fecha_alerta: new Date(),
-                mensaje: `El stock disponible (${stockDisponible}) ha bajado del mínimo permitido (${inventory.stock_minimo}).`,
-            } as any;
-
-            await this.stockAlertService.createAlert(alerta);
-        }
-    }
+    // --- MÉTODOS CLAVE PARA PEDIDOS ---
 
     async getBatchesForSale(id_producto: number, cantidadRequerida: number): Promise<any[]> {
+        // Buscar lotes activos ordenados por vencimiento (FEFO)
         const batches = await this.batchRepository.find({
             where: { 
-                id_producto, 
+                id_producto: Number(id_producto), 
                 estado_lote: 'activo' 
             },
             order: { fecha_vencimiento: 'ASC' } 
         });
 
-        const stockTotal = batches.reduce((sum, batch) => sum + batch.cantidad_disponible, 0);
+        // Calcular stock real disponible en lotes
+        const stockTotal = batches.reduce((sum, batch) => sum + Number(batch.cantidad_disponible), 0);
         
         if (stockTotal < cantidadRequerida) {
-            throw new BadRequestException(`Stock insuficiente para el producto ID ${id_producto}. Requerido: ${cantidadRequerida}, Disponible: ${stockTotal}`);
+            throw new BadRequestException(`Stock insuficiente para el producto ID ${id_producto}. Requerido: ${cantidadRequerida}, Disponible en lotes: ${stockTotal}`);
         }
 
         const asignacion: any[] = [];
-        let faltaPorCubrir = cantidadRequerida;
+        let faltaPorCubrir = Number(cantidadRequerida);
 
         for (const batch of batches) {
             if (faltaPorCubrir <= 0) break;
 
-            const tomar = Math.min(batch.cantidad_disponible, faltaPorCubrir);
+            const disponibleEnLote = Number(batch.cantidad_disponible);
+            const tomar = Math.min(disponibleEnLote, faltaPorCubrir);
             
             if (tomar > 0) {
                 asignacion.push({
@@ -165,11 +121,16 @@ export class BatchService {
         
         if (!batch) throw new NotFoundException(`Lote ${id_lote} no encontrado durante la transacción.`);
 
-        batch.cantidad_disponible -= cantidad;
+        const nuevaCantidad = Number(batch.cantidad_disponible) - Number(cantidad);
 
-        if (batch.cantidad_disponible < 0) {
+        if (nuevaCantidad < 0) {
              throw new BadRequestException(`Error de concurrencia: El lote ${id_lote} no tiene suficiente stock.`);
         }
+
+        batch.cantidad_disponible = nuevaCantidad;
+        
+        // Si llega a 0, opcionalmente podríamos cambiar estado, pero dejarlo activo con 0 es seguro
+        // if (batch.cantidad_disponible === 0) batch.estado_lote = 'agotado';
 
         await manager.save(batch);
     }
@@ -178,13 +139,66 @@ export class BatchService {
         const batch = await manager.findOne(Batch, { where: { id_lote } });
         
         if (batch) {
-            batch.cantidad_disponible += cantidad;
+            batch.cantidad_disponible = Number(batch.cantidad_disponible) + Number(cantidad);
             if (batch.estado_lote === 'agotado' && batch.cantidad_disponible > 0) {
                 batch.estado_lote = 'activo';
             }
             await manager.save(batch);
         } else {
-            console.warn(`Lote ${id_lote} no encontrado para restauración.`);
+            console.warn(`Lote ${id_lote} no encontrado para restauración (posiblemente eliminado).`);
+        }
+    }
+
+    // --- MÉTODOS AUXILIARES ---
+
+    private async syncInventoryStock(id_producto: number) {
+        const activeSum = await this.batchRepository.sum('cantidad_disponible', { 
+            id_producto: id_producto,
+            estado_lote: 'activo'
+        });
+        const stockDisponible = activeSum || 0;
+
+        const expiredSum = await this.batchRepository.sum('cantidad_disponible', { 
+            id_producto: id_producto,
+            estado_lote: 'vencido'
+        });
+        const stockVencido = expiredSum || 0;
+
+        const damagedSum = await this.batchRepository.sum('cantidad_disponible', { 
+            id_producto: id_producto,
+            estado_lote: 'defectuoso'
+        });
+        const stockDanado = damagedSum || 0;
+
+        // Intentamos obtener inventario existente, si falla devolvemos null para crearlo
+        let inventory = await this.inventoryService.getInventoryByProductId(id_producto).catch(() => null);
+
+        if (!inventory) {
+            inventory = await this.inventoryService.setInventory(id_producto, {
+                stock_disponible: stockDisponible,
+                stock_vencido: stockVencido,
+                stock_danado: stockDanado,
+                stock_reservado: 0,
+                stock_minimo: 10 
+            });
+        } else {
+            inventory.stock_disponible = stockDisponible;
+            inventory.stock_vencido = stockVencido;
+            inventory.stock_danado = stockDanado;
+            inventory.ultima_actualizacion = new Date();
+            await this.inventoryService.setInventory(id_producto, inventory);
+        }
+
+        // Alerta de Stock Bajo
+        if (inventory.stock_disponible <= inventory.stock_minimo) {
+            const alerta = {
+                id_producto: id_producto,
+                tipo_alerta: 'Umbral mínimo',
+                fecha_alerta: new Date(),
+                mensaje: `El stock disponible (${stockDisponible}) ha bajado del mínimo permitido (${inventory.stock_minimo}).`,
+            } as any;
+
+            await this.stockAlertService.createAlert(alerta);
         }
     }
 }

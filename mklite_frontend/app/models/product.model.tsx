@@ -3,17 +3,25 @@ export interface CategoryModel {
     nombre: string;
 }
 
+// 1. Agregamos esta interfaz para definir qué trae el inventario
+export interface InventoryModel {
+    stock_disponible: number;
+    stock_reservado?: number;
+    stock_minimo?: number;
+}
+
 export interface ProductModel {
     id_producto: number;
     nombre: string;
     descripcion: string;
     precio_venta: number;        
-    //stock_actual?: number; // Opcional
     imagen_url: string;      
-    //estado?: boolean;
     
-    
+    // Relaciones
     productCategories?: {
         categoria: CategoryModel
     }[];
+
+    // 2. Agregamos la propiedad inventory aquí
+    inventory?: InventoryModel; 
 }
