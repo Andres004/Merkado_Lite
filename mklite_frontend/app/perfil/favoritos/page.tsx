@@ -4,7 +4,15 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { AlertCircle, Loader2, ShoppingCart, Trash2 } from 'lucide-react';
+import { 
+  AlertCircle, 
+  Loader2, 
+  ShoppingCart, 
+  Trash2, 
+  Heart, 
+  PackageSearch, 
+  ArrowRight 
+} from 'lucide-react';
 
 import ConfirmModal from '../../components/admin/users/ConfirmModal';
 import { FavoriteModel } from '../../models/favorite.model';
@@ -12,6 +20,13 @@ import { UserModel } from '../../models/user.model';
 import { addToCartService } from '../../services/cart.service';
 import { getMyFavorites, removeFavorite } from '../../services/favorite.service';
 import { fetchCurrentUser } from '../../services/user.service';
+
+// Función auxiliar para formatear moneda
+const formatCurrency = (value?: number | string | null) => {
+  const numeric = Number(value ?? 0);
+  if (!Number.isFinite(numeric)) return 'Bs. 0.00';
+  return `Bs. ${numeric.toFixed(2)}`;
+};
 
 export default function FavoritosPage() {
   const router = useRouter();
@@ -59,9 +74,11 @@ export default function FavoritosPage() {
     return {
       available: isAvailable,
       label: isAvailable ? 'Disponible' : 'Agotado',
+      className: isAvailable 
+        ? 'bg-green-50 text-green-700 border-green-200' 
+        : 'bg-red-50 text-red-700 border-red-200'
     };
   };
-
   
   const handleAddToCart = async (favorite: FavoriteModel) => {
     const userId = user?.id_usuario;
@@ -74,18 +91,20 @@ export default function FavoritosPage() {
     setAddingToCartId(favorite.id_producto);
     try {
         await addToCartService({
-        id_usuario: userId, // ✅ ahora es number seguro
+        id_usuario: userId,
         id_producto: favorite.id_producto,
         cantidad: 1,
         });
         setStatusMessage(`${favorite.product.nombre} añadido al carrito.`);
+        // Limpiar mensaje después de 3 segundos
+        setTimeout(() => setStatusMessage(null), 3000);
     } catch (error: any) {
         const msg = error?.response?.data?.message || 'No se pudo añadir al carrito.';
         setStatusMessage(msg);
     } finally {
         setAddingToCartId(null);
     }
-    };
+  };
 
   const handleRemoveFavorite = async () => {
     if (!confirmTarget) return;
@@ -95,6 +114,7 @@ export default function FavoritosPage() {
       await removeFavorite(confirmTarget.id_producto);
       setFavorites((prev) => prev.filter((fav) => fav.id_producto !== confirmTarget.id_producto));
       setStatusMessage(`${confirmTarget.product.nombre} eliminado de favoritos.`);
+      setTimeout(() => setStatusMessage(null), 3000);
     } catch (error: any) {
       const msg = error?.response?.data?.message || 'No se pudo eliminar el favorito.';
       setStatusMessage(msg);
@@ -106,125 +126,176 @@ export default function FavoritosPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="animate-spin text-red-600" size={32} />
-        <span className="ml-2 text-gray-700">Cargando tus favoritos...</span>
+      <div className="flex flex-col items-center justify-center min-h-[400px]">
+        <div className="h-10 w-10 bg-[#F40009] rounded-full animate-bounce mb-4"></div>
+        <p className="text-gray-400 font-medium">Cargando tus favoritos...</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-        <div>
-          <p className="text-sm text-gray-500">Mi Cuenta</p>
-          <h1 className="text-2xl font-bold text-gray-900">Favoritos</h1>
-          <p className="text-gray-600">Guarda tus productos preferidos y agrégalos al carrito cuando quieras.</p>
+    <div className="space-y-8 animate-fade-in-up pb-10">
+      
+      {/* --- HEADER --- */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-gray-100 pb-6">
+        <div className="flex items-center gap-4">
+            <div className="p-3 bg-red-50 text-[#F40009] rounded-xl shadow-sm border border-red-100">
+                <Heart size={32} className="fill-current" />
+            </div>
+            <div>
+                {/* TÍTULO EN ROJO (#F40009) BLINDADO */}
+                <h1 className="text-3xl font-extrabold text-[#F40009]" style={{ color: '#F40009' }}>
+                    Favoritos
+                </h1>
+                <p className="text-gray-500 mt-1">
+                    Guarda tus productos preferidos y agrégalos al carrito cuando quieras.
+                </p>
+            </div>
         </div>
+
         {user && (
-          <div className="bg-white border border-gray-200 rounded-lg px-4 py-3 shadow-sm">
-            <p className="text-xs text-gray-500 uppercase">Cliente</p>
-            <p className="text-sm font-semibold text-gray-800">{user.nombre} {user.apellido}</p>
-            {user.email && <p className="text-sm text-gray-600">{user.email}</p>}
+          <div className="hidden md:block text-right">
+             <span className="inline-block px-4 py-1 rounded-full bg-gray-50 text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">
+                Cliente
+             </span>
+             <p className="text-sm font-bold text-gray-900">{user.nombre} {user.apellido}</p>
           </div>
         )}
-      </header>
+      </div>
 
+      {/* --- ALERTAS --- */}
       {statusMessage && (
-        <div className="flex items-center gap-2 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg text-sm">
-          <AlertCircle size={18} />
-          <span>{statusMessage}</span>
+        <div className="animate-fade-in flex items-center gap-3 bg-white border-l-4 border-[#F40009] px-4 py-3 shadow-md rounded-r-lg">
+          <AlertCircle size={20} className="text-[#F40009]" />
+          <span className="text-gray-700 font-medium text-sm">{statusMessage}</span>
         </div>
       )}
 
+      {/* --- CONTENIDO --- */}
       {favorites.length === 0 ? (
-        <div className="bg-white border border-gray-200 rounded-lg p-8 text-center shadow-sm">
-          <p className="text-lg font-semibold text-gray-800">Aún no tienes productos en favoritos.</p>
-          <p className="text-gray-600 mt-2">Descubre nuestras ofertas y guarda tus productos preferidos.</p>
+        // Estado Vacío con diseño mejorado
+        <div className="bg-white rounded-3xl border border-gray-100 p-12 text-center shadow-sm flex flex-col items-center">
+          <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-6 text-gray-300">
+             <PackageSearch size={40} />
+          </div>
+          <h2 className="text-xl font-extrabold text-gray-900 mb-2">
+             Aún no tienes favoritos
+          </h2>
+          <p className="text-gray-500 max-w-md mx-auto mb-8">
+             Parece que no has guardado nada todavía. Explora nuestras categorías y dale corazón a lo que más te guste.
+          </p>
           <Link
-            href="/productos"
-            className="inline-flex mt-4 px-5 py-2 bg-[#F40009] text-white rounded-lg font-semibold hover:bg-red-700 transition-colors"
+            href="/categorias" // REDIRECCIÓN ARREGLADA A CATEGORÍAS
+            className="inline-flex items-center gap-2 px-6 py-3 bg-[#F40009] text-white rounded-full font-bold shadow-lg shadow-red-200 hover:bg-red-700 hover:scale-105 transition-all"
           >
-            Explorar productos
+            Explorar Categorías
+            <ArrowRight size={18} />
           </Link>
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Producto</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Precio</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Estado</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Acción</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-100">
-              {favorites.map((favorite) => {
-                const { available, label } = availability(favorite);
-                return (
-                  <tr key={`${favorite.id_usuario}-${favorite.id_producto}`} className="hover:bg-gray-50">
-                    <td className="px-4 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-14 h-14 relative bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
-                          <Image
-                            src={favorite.product.imagen_url || '/images/placeholder.jpg'}
-                            alt={favorite.product.nombre}
-                            fill
-                            className="object-contain"
-                          />
+        // Tabla de Favoritos
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-50">
+              <thead>
+                <tr className="bg-gray-50/50">
+                  <th className="px-6 py-4 text-left text-xs font-extrabold text-gray-400 uppercase tracking-wider">Producto</th>
+                  <th className="px-6 py-4 text-left text-xs font-extrabold text-gray-400 uppercase tracking-wider hidden sm:table-cell">Precio</th>
+                  <th className="px-6 py-4 text-left text-xs font-extrabold text-gray-400 uppercase tracking-wider hidden md:table-cell">Estado</th>
+                  <th className="px-6 py-4 text-right text-xs font-extrabold text-gray-400 uppercase tracking-wider">Acciones</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-50">
+                {favorites.map((favorite) => {
+                  const { available, label, className } = availability(favorite);
+                  // Precio simulado si no viene en el modelo, ajustar según tu backend
+                  const precio = favorite.product.precio_venta || 0; 
+
+                  return (
+                    <tr key={`${favorite.id_usuario}-${favorite.id_producto}`} className="group hover:bg-red-50/10 transition-colors">
+                      
+                      {/* Producto */}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-4">
+                          <div className="w-16 h-16 relative bg-white rounded-xl overflow-hidden border border-gray-100 shadow-sm group-hover:border-red-100 transition-colors shrink-0">
+                            <Image
+                              src={favorite.product.imagen_url || '/images/placeholder.jpg'}
+                              alt={favorite.product.nombre}
+                              fill
+                              className="object-contain p-2"
+                            />
+                          </div>
+                          <div>
+                            <p className="font-bold text-gray-900 group-hover:text-[#F40009] transition-colors">
+                                {favorite.product.nombre}
+                            </p>
+                            <div className="sm:hidden mt-1 font-bold text-[#F40009]">
+                                {formatCurrency(precio)}
+                            </div>
+                            <div className="md:hidden mt-1">
+                                <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${className}`}>
+                                    {label}
+                                </span>
+                            </div>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-semibold text-gray-900">{favorite.product.nombre}</p>
-                          <p className="text-sm text-gray-500">ID: {favorite.id_producto}</p>
+                      </td>
+                      
+                      {/* Precio (Desktop) */}
+                      <td className="px-6 py-4 whitespace-nowrap hidden sm:table-cell">
+                         <span className="text-lg font-bold text-gray-900">
+                             {formatCurrency(precio)}
+                         </span>
+                      </td>
+
+                      {/* Estado (Desktop) */}
+                      <td className="px-6 py-4 whitespace-nowrap hidden md:table-cell">
+                        <span className={`inline-flex px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide border ${className}`}>
+                          {label}
+                        </span>
+                      </td>
+
+                      {/* Acciones */}
+                      <td className="px-6 py-4 whitespace-nowrap text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          
+                          {/* Botón Añadir al Carrito */}
+                          <button
+                            onClick={() => handleAddToCart(favorite)}
+                            disabled={!available || addingToCartId === favorite.id_producto}
+                            className={`
+                                inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all shadow-sm
+                                ${available 
+                                    ? 'bg-[#F40009] text-white hover:bg-red-800 hover:shadow-red-100' 
+                                    : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                }
+                            `}
+                          >
+                            {addingToCartId === favorite.id_producto ? (
+                              <Loader2 size={18} className="animate-spin" />
+                            ) : (
+                              <ShoppingCart size={18} />
+                            )}
+                            <span className="hidden sm:inline">Añadir</span>
+                          </button>
+
+                          {/* Botón Eliminar */}
+                          <button
+                            onClick={() => setConfirmTarget(favorite)}
+                            className="p-2 rounded-lg text-gray-400 hover:text-[#F40009] hover:bg-red-50 transition-colors border border-transparent hover:border-red-100"
+                            title="Eliminar de favoritos"
+                          >
+                            <Trash2 size={20} />
+                          </button>
+
                         </div>
-                      </div>
-                    </td>
-                    
-                    <td className="px-4 py-4 text-gray-800 font-semibold">
-                        
-                    </td>
-                    <td className="px-4 py-4">
-                      <span
-                        className={`inline-flex px-3 py-1 rounded-full text-sm font-semibold ${
-                          available ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'
-                        }`}
-                      >
-                        {label}
-                      </span>
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className="flex items-center gap-3">
-                        <button
-                          onClick={() => handleAddToCart(favorite)}
-                          disabled={!available || addingToCartId === favorite.id_producto}
-                          className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold shadow-sm transition-colors ${
-                            available
-                              ? 'bg-[#F40009] text-white hover:bg-red-700'
-                              : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                          } ${addingToCartId === favorite.id_producto ? 'opacity-80' : ''}`}
-                        >
-                          {addingToCartId === favorite.id_producto ? (
-                            <Loader2 size={16} className="animate-spin" />
-                          ) : (
-                            <ShoppingCart size={16} />
-                          )}
-                          Añadir al carrito
-                        </button>
-                        <button
-                          onClick={() => setConfirmTarget(favorite)}
-                          className="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold text-red-600 hover:bg-red-50 border border-red-100"
-                        >
-                          <Trash2 size={16} />
-                          Eliminar
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
