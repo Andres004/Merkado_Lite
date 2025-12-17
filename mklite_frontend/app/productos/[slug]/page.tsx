@@ -3,6 +3,7 @@
 import React, { useEffect, useState, use } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation'; // Importamos useRouter para redirigir
 import { Home, Minus, Plus, Heart, ShoppingCart, ChevronRight, CheckCircle, AlertCircle } from 'lucide-react';
 
 // IMPORTACIONES
@@ -15,6 +16,7 @@ import { useFavorites } from '../../context/FavoriteContext';
 export default function ProductDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   
   const { slug } = use(params);
+  const router = useRouter(); // Inicializamos router
   
   // Estados
   const [product, setProduct] = useState<ProductModel | null>(null);
@@ -100,7 +102,18 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
         id_producto: product.id_producto,
         cantidad: qty 
       });
+      
+      // Notificación más sutil o alert
       alert(`¡${qty} ${product.nombre}(s) agregado(s) al carrito!`);
+      
+      // --- CAMBIO AQUÍ: Redirección automática a la categoría ---
+      const categoryId = product.productCategories?.[0]?.categoria?.id_categoria;
+      if (categoryId) {
+          router.push(`/categoria/${categoryId}`);
+      } else {
+          router.push('/categorias'); // Fallback si no hay categoría
+      }
+
     } catch (error: any) {
       console.error(error);
       const msg = error.response?.data?.message || 'Error al agregar al carrito';
@@ -137,6 +150,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
   }
 
   const categoryName = product.productCategories?.[0]?.categoria?.nombre || "General";
+  const categoryId = product.productCategories?.[0]?.categoria?.id_categoria;
   const favorite = product ? isFavorite(product.id_producto) : false;
 
   const handleFavoriteToggle = async () => {
@@ -147,18 +161,34 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
   return (
     <div className="bg-gray-50 pb-16 font-sans">
     
-      {/* HEADER / BREADCRUMBS (Estilo limpio, sin barra negra) */}
+      {/* HEADER / BREADCRUMBS */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 py-6 relative z-10">
             <div className="flex items-center text-sm text-gray-500">
                 <Link href="/" className="flex items-center hover:text-[#F40009] transition-colors">
                     <Home size={18} className="mr-2" /> Inicio
                 </Link>
+                
                 <ChevronRight size={18} className="mx-2 text-gray-400" />
-                <span className="hover:text-[#F40009] cursor-pointer transition-colors">
-                    {categoryName}
-                </span>
+                
+                {/* CAMBIO: Enlace a /categorias */}
+                <Link href="/categorias" className="hover:text-[#F40009] transition-colors">
+                    Categorías
+                </Link>
+
                 <ChevronRight size={18} className="mx-2 text-gray-400" />
+                
+                {/* CAMBIO: Enlace a la categoría específica */}
+                {categoryId ? (
+                    <Link href={`/categoria/${categoryId}`} className="hover:text-[#F40009] transition-colors">
+                        {categoryName}
+                    </Link>
+                ) : (
+                    <span>{categoryName}</span>
+                )}
+                
+                <ChevronRight size={18} className="mx-2 text-gray-400" />
+                
                 <span className="font-bold !text-[#F40009] tracking-wide line-clamp-1" style={{ color: '#F40009' }}>
                     {product.nombre}
                 </span>
@@ -170,19 +200,18 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
       <div className="max-w-7xl mx-auto px-4 pt-10">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
           
-          {/* Imagen (TAMAÑO REDUCIDO) */}
-          {/* Se redujo h-[450px] a h-[400px] y el padding */}
+          {/* Imagen */}
           <div className="relative h-[400px] flex items-center justify-center p-4 bg-gray-50 rounded-xl border border-gray-100">
             <Image
               src={product.imagen_url || '/images/placeholder.jpg'}
               alt={product.nombre || "Producto"}
-              width={350}  // Reducido de 400
-              height={350} // Reducido de 400
+              width={350} 
+              height={350}
               style={{ objectFit: 'contain' }}
               priority
               className="hover:scale-105 transition-transform duration-300"
             />
-             {/* Botón de Favoritos Flotante */}
+             {/* Botón Favoritos */}
              <button
                 onClick={handleFavoriteToggle}
                 className={`absolute top-4 right-4 p-3 rounded-full shadow-sm border transition-all z-10
@@ -200,16 +229,13 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
                     <p className="text-gray-400 font-medium">COD: {product.id_producto}</p>
                 </div>
                 
-                {/* TÍTULO FORZADO A ROJO (Opción Nuclear) */}
                 <h1 className="text-3xl md:text-4xl font-extrabold !text-[#F40009] tracking-tight leading-tight" style={{ color: '#F40009' }}>
                     {product.nombre}
                 </h1>
             </div>
             
-            {/* Descripción */}
             <p className="text-gray-600 text-lg leading-relaxed">{product.descripcion}</p>
 
-            {/* Precios (También forzado a rojo para consistencia) */}
             <div className="flex items-baseline space-x-2 pb-4 border-b border-gray-100">
                 <span className="text-3xl font-bold !text-[#F40009]" style={{ color: '#F40009' }}>
                     Bs. {product.precio_venta}
@@ -220,7 +246,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
             <div className="pt-4 space-y-4">
                 <span className="text-sm font-bold text-gray-900 uppercase">Cantidad:</span>
                 <div className="flex gap-4">
-                    {/* Selector de Cantidad (Estilo limpio) */}
+                    {/* Selector */}
                     <div className="flex items-center bg-gray-50 rounded-lg border border-gray-200">
                         <button 
                             onClick={decreaseQty}
@@ -241,7 +267,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
                         </button>
                     </div>
 
-                    {/* Botón Añadir al Carrito (ROJO) */}
+                    {/* Botón Añadir (ROJO) */}
                     <button 
                         onClick={handleAddToCart}
                         disabled={isOutOfStock}
@@ -260,7 +286,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
         </div>
       </div>
       
-      {/* INFORMACIÓN ADICIONAL (Estilo mejorado) */}
+      {/* INFORMACIÓN ADICIONAL */}
       <div className="max-w-7xl mx-auto px-4 pt-10">
         <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
           <h2 className="text-xl font-bold text-gray-900 mb-6 border-b pb-2 inline-block">Información Adicional</h2>
@@ -268,7 +294,14 @@ export default function ProductDetailPage({ params }: { params: Promise<{ slug: 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 text-sm">
             <div className="flex flex-col">
                 <span className="font-semibold text-gray-500 mb-1">Categoría:</span>
-                <span className="text-gray-900 font-medium text-base">{categoryName}</span>
+                {/* CAMBIO: Enlace a la categoría también aquí */}
+                {categoryId ? (
+                    <Link href={`/categoria/${categoryId}`} className="text-gray-900 font-medium text-base hover:text-[#F40009] hover:underline transition-colors w-fit">
+                        {categoryName}
+                    </Link>
+                ) : (
+                    <span className="text-gray-900 font-medium text-base">{categoryName}</span>
+                )}
             </div>
             <div className="flex flex-col">
                 <span className="font-semibold text-gray-500 mb-1">Disponibilidad:</span>

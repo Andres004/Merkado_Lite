@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
-import { Minus, Plus, Trash2, ShoppingCart, ArrowLeft, ChevronRight } from 'lucide-react';
+// AGREGADO: Importar 'Home'
+import { Minus, Plus, Trash2, ShoppingCart, ArrowLeft, ChevronRight, PackageOpen, Home } from 'lucide-react';
 import Link from 'next/link';
 import { getCartByUserService, updateCartItemService, deleteCartItemService } from '../services/cart.service';
 
@@ -73,11 +74,9 @@ export default function CartPage() {
             
             {/* CÍRCULO DEL ICONO CON SIGNO DE INTERROGACIÓN */}
             <div className="relative mb-8">
-                {/* Círculo base con borde rojo suave */}
                 <div className="w-48 h-48 bg-red-50/50 rounded-full flex items-center justify-center border-4 border-red-100 shadow-xl">
                     <ShoppingCart size={80} className="text-red-300 opacity-90" strokeWidth={1.5} />
                 </div>
-                {/* Signo ? flotante animado */}
                 <div className="absolute top-0 right-4 bg-white border-4 border-[#F40009] text-[#F40009] w-14 h-14 rounded-full flex items-center justify-center font-extrabold text-3xl shadow-lg animate-bounce">
                     ?
                 </div>
@@ -95,7 +94,7 @@ export default function CartPage() {
                 ¿No sabes qué comprar? ¡Tenemos miles de productos frescos esperándote!
             </p>
             
-            <Link href="/" className="bg-[#F40009] text-white px-10 py-4 rounded-full font-bold text-lg hover:bg-red-700 hover:shadow-xl transition-all transform hover:-translate-y-1 shadow-red-200 flex items-center gap-2">
+            <Link href="/categorias" className="bg-[#F40009] text-white px-10 py-4 rounded-full font-bold text-lg hover:bg-red-700 hover:shadow-xl transition-all transform hover:-translate-y-1 shadow-red-200 flex items-center gap-2">
                 <ArrowLeft size={20} /> Ir a la tienda
             </Link>
         </div>
@@ -111,9 +110,11 @@ export default function CartPage() {
       {/* HEADER SIMPLE */}
       <div className="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center text-sm text-gray-500">
-            <Link href="/" className="hover:text-[#F40009] transition-colors font-medium">Inicio</Link>
+            {/* CAMBIO: Agregado flex items-center e icono Home */}
+            <Link href="/" className="hover:text-[#F40009] transition-colors font-medium flex items-center">
+                <Home size={16} className="mr-1" /> Inicio
+            </Link>
             <ChevronRight size={16} className="mx-2 text-gray-300" />
-            {/* AQUÍ ESTÁ EL CAMBIO: Breadcrumb "Carrito" en ROJO */}
             <span className="font-bold text-[#F40009]">Carrito</span>
         </div>
       </div>
@@ -123,7 +124,6 @@ export default function CartPage() {
         {/* --- TÍTULO PRINCIPAL ROJO --- */}
         <div className="flex items-center gap-3 mb-8">
             <div className="p-3 bg-red-50 rounded-xl">
-                {/* AQUÍ ESTÁ EL CAMBIO: Volvimos al icono ShoppingCart */}
                 <ShoppingCart className="text-[#F40009]" size={28} />
             </div>
             <h1 
@@ -138,7 +138,6 @@ export default function CartPage() {
           
           {/* --- COLUMNA IZQUIERDA: LISTA DE PRODUCTOS --- */}
           <div className="lg:w-2/3 space-y-5">
-             {/* Encabezados visuales (Ocultos en móvil) */}
              <div className="hidden md:flex justify-between text-xs font-bold text-gray-400 uppercase tracking-wider px-6">
                 <span className="w-1/2">Detalle del Producto</span>
                 <span className="w-1/6 text-center">Cantidad</span>
@@ -150,7 +149,7 @@ export default function CartPage() {
                     key={item.id_producto} 
                     className="group bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-gray-100 hover:border-red-200 hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all duration-300 flex flex-col sm:flex-row items-center gap-6 relative overflow-hidden"
                 >
-                    {/* Decoración hover (barra roja lateral izquierda) */}
+                    {/* Decoración hover */}
                     <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#F40009] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
                     {/* Imagen con Marco */}
@@ -212,7 +211,7 @@ export default function CartPage() {
                 </div>
             ))}
 
-            <Link href="/" className="inline-flex items-center text-gray-500 hover:text-[#F40009] font-medium mt-8 transition-colors group px-2">
+            <Link href="/categorias" className="inline-flex items-center text-gray-500 hover:text-[#F40009] font-medium mt-8 transition-colors group px-2">
                 <ArrowLeft size={18} className="mr-2 group-hover:-translate-x-1 transition-transform" />
                 Continuar comprando
             </Link>

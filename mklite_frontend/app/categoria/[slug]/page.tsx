@@ -87,11 +87,17 @@ export default function CategoryPage({ params }: { params: Promise<{ slug: strin
                 <Link href="/" className="hover:text-[#F40009] transition-colors flex items-center text-gray-500">
                     <Home size={16} className="mr-2" /> Inicio
                 </Link>
-                <ChevronRight size={16} className="mx-2 text-gray-400" />
-                <span className="text-gray-500">Categorías</span>
+                
                 <ChevronRight size={16} className="mx-2 text-gray-400" />
                 
-                {/* Nombre de la categoría en el breadcrumb - FORZADO ROJO */}
+                {/* CAMBIO AQUÍ: Ahora 'Categorías' es un Link */}
+                <Link href="/categorias" className="hover:text-[#F40009] transition-colors text-gray-500">
+                    Categorías
+                </Link>
+                
+                <ChevronRight size={16} className="mx-2 text-gray-400" />
+                
+                {/* Nombre de la categoría actual (Texto Rojo estático) */}
                 <span className="font-bold !text-[#F40009]" style={{ color: '#F40009' }}>
                     {category.nombre}
                 </span>
@@ -100,7 +106,6 @@ export default function CategoryPage({ params }: { params: Promise<{ slug: strin
             {/* Título Estético */}
             <div className="flex flex-col md:flex-row justify-between items-end gap-4">
                 <div>
-                    {/* AQUI ESTÁ EL CAMBIO FUERTE: Clase !text-[#F40009] y style inline */}
                     <h1 
                         className="text-4xl md:text-5xl font-extrabold tracking-tight !text-[#F40009]" 
                         style={{ color: '#F40009' }}

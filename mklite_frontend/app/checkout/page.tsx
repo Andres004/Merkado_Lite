@@ -4,7 +4,8 @@ import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation'; 
-import { MapPin, Phone, User, Mail, CreditCard, CheckCircle, ChevronRight, Store, Truck } from 'lucide-react';
+// AGREGADO: Importar 'Home'
+import { MapPin, Phone, User, Mail, CreditCard, CheckCircle, ChevronRight, Store, Truck, Home } from 'lucide-react';
 import { getCartByUserService, deleteCartItemService } from '../services/cart.service';
 import { createOrderService, CreateOrderPayload } from '../services/order.service';
 
@@ -122,7 +123,10 @@ export default function CheckoutPage() {
       {/* Navbar Simple */}
       <div className="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-4 text-sm text-gray-600 flex items-center">
-          <Link href="/" className="hover:text-[#F40009] transition-colors">Inicio</Link> 
+          {/* CAMBIO: Agregado flex items-center e icono Home */}
+          <Link href="/" className="hover:text-[#F40009] transition-colors flex items-center">
+            <Home size={16} className="mr-1" /> Inicio
+          </Link> 
           <ChevronRight size={16} className="mx-2 text-gray-300" />
           <Link href="/carrito" className="hover:text-[#F40009] transition-colors"> Carrito</Link> 
           <ChevronRight size={16} className="mx-2 text-gray-300" />
