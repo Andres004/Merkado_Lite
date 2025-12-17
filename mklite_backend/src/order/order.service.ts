@@ -12,6 +12,11 @@ import { InventoryService } from '../inventory/inventory.service';
 @Injectable()
 export class OrderService {
     private orderRepository: Repository<Order>;
+    
+    // Configuración de la tienda (UCB Cochabamba) y Tarifas
+    private readonly STORE_LOCATION = { lat: -17.3713, lng: -66.1442 };
+    private readonly BASE_RATE = 5.00;
+    private readonly RATE_PER_KM = 2.00;
 
     constructor(
         private batchService: BatchService,
@@ -24,26 +29,46 @@ export class OrderService {
         return this.orderRepository;
     }
 
+    // --- NUEVO MÉTODO: Lógica de Haversine ---
+    calculateShippingCost(userLat: number, userLng: number) {
+        const R = 6371; // Radio de la tierra en km
+        const dLat = (userLat - this.STORE_LOCATION.lat) * (Math.PI / 180);
+        const dLng = (userLng - this.STORE_LOCATION.lng) * (Math.PI / 180);
+        
+        const a = 
+            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(this.STORE_LOCATION.lat * (Math.PI / 180)) * Math.cos(userLat * (Math.PI / 180)) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+            
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        const distanceKm = R * c;
+
+        // Lógica de precio: Base + (Km extra * Tarifa)
+        let cost = this.BASE_RATE;
+        if (distanceKm > 1) {
+            cost = this.BASE_RATE + ((distanceKm - 1) * this.RATE_PER_KM);
+        }
+
+        return {
+            distanceKm: parseFloat(distanceKm.toFixed(2)),
+            cost: parseFloat(cost.toFixed(2))
+        };
+    }
+
     async createOrder(dto: CreateOrderDto): Promise<Order> {
         const queryRunner = AppDataSource.createQueryRunner(); 
         await queryRunner.connect();
         await queryRunner.startTransaction();
 
         try {
-            // 1. Obtener lotes disponibles para cada item
-            // Usamos Promise.all para resolver todas las búsquedas de lotes en paralelo
+            // 1. Obtener lotes disponibles (Sin cambios aquí)
             const itemsConLotePromises = dto.items.map(async (itemDto) => {
                 const cantidadRequerida = Number(itemDto.cantidad);
                 const idProducto = Number(itemDto.id_producto);
+                if (cantidadRequerida <= 0) return [];
 
-                if (cantidadRequerida <= 0) return []; // Protección contra cantidades 0 o negativas
-
-                // Esto buscará lotes y lanzará error si no hay stock suficiente
                 const lotes = await this.batchService.getBatchesForSale(idProducto, cantidadRequerida);
-                
                 return lotes.map(lote => ({
                     ...lote,
-                    // Si el DTO trae precio, úsalo, si no, usa el costo del lote como referencia
                     precio_unitario: Number(itemDto.precio_unitario ?? lote.precio_unitario),
                 }));
             });
@@ -52,15 +77,28 @@ export class OrderService {
             const itemsFlattened = itemsConLotes.flat(); 
 
             if (itemsFlattened.length === 0 && dto.items.length > 0) {
-                 // Si había items pero no se asignó ninguno, algo salió mal
                  throw new BadRequestException("No se pudieron asignar productos (Stock insuficiente o error en lotes)");
             }
 
             // 2. Calcular Totales
             const subtotalCalculado = itemsFlattened.reduce((sum, item) => sum + (item.cantidad_a_usar * item.precio_unitario), 0);
-            const costo_envio = dto.tipo_entrega === 'domicilio' ? 5.00 : 0.00; 
             
-            // Permitimos override si viene del frontend (opcional), sino usamos el calculado
+            // --- CAMBIO: Determinación del Costo de Envío ---
+            let costo_envio = 0;
+            if (dto.tipo_entrega === 'domicilio') {
+                // Si el frontend ya mandó el costo calculado, lo usamos.
+                // Si no, y tenemos coordenadas, lo calculamos aquí como respaldo.
+                if (dto.costo_envio !== undefined) {
+                    costo_envio = Number(dto.costo_envio);
+                } else if (dto.latitud_entrega && dto.longitud_entrega) {
+                    const calculo = this.calculateShippingCost(Number(dto.latitud_entrega), Number(dto.longitud_entrega));
+                    costo_envio = calculo.cost;
+                } else {
+                    costo_envio = 5.00; // Fallback tarifa base
+                }
+            }
+            // ------------------------------------------------
+
             const subtotal = dto.subtotal_override ?? subtotalCalculado;
             const total = (dto.total_override ?? subtotal) + costo_envio;
 
@@ -71,6 +109,10 @@ export class OrderService {
                 subtotal,
                 costo_envio,
                 total,
+                // Guardamos coordenadas
+                latitud_entrega: dto.latitud_entrega,
+                longitud_entrega: dto.longitud_entrega,
+                
                 id_descuento_aplicado: dto.id_descuento_aplicado ?? undefined,
                 fecha_creacion: new Date(),
                 fecha_actualizacion: new Date(),
@@ -78,7 +120,7 @@ export class OrderService {
 
             const savedOrder = await queryRunner.manager.save(Order, newOrder);
 
-            // 4. Crear los OrderItems (Detalle del pedido vinculado a lotes)
+            // 4, 5, 6, 7 (Resto del código igual: OrderItems, Stock, Shipment, Commit)
             const itemsToSave = itemsFlattened.map(item => {
                 const orderItem = new OrderItem();
                 orderItem.id_pedido = savedOrder.id_pedido;
@@ -91,28 +133,20 @@ export class OrderService {
             
             await queryRunner.manager.save(OrderItem, itemsToSave);
 
-            // 5. DESCONTAR STOCK (CRÍTICO)
             for (const item of itemsFlattened) {
-                // Restar del Inventario Global
                 await this.inventoryService.reduceStock(item.id_producto, item.cantidad_a_usar, queryRunner.manager);
-                
-                // Restar del Lote Específico
                 await this.batchService.reduceBatchStock(item.id_lote, item.cantidad_a_usar, queryRunner.manager);
             }
 
-            // 6. Generar Envío Inicial
             const newShipment = new Shipment();
             newShipment.id_pedido = savedOrder.id_pedido;
             newShipment.estado_envio = 'Pendiente'; 
-            
             await queryRunner.manager.save(Shipment, newShipment);
 
-            // 7. Confirmar Transacción
             await queryRunner.commitTransaction();
             return savedOrder;
 
         } catch (error) {
-            // Si algo falla, revertimos TODO (nada se guarda, el stock no se toca)
             await queryRunner.rollbackTransaction();
             console.error("Error creando pedido:", error);
             throw new BadRequestException(`Fallo en la creación del pedido: ${error.message}`); 
@@ -121,17 +155,17 @@ export class OrderService {
         }
     }
 
+    // ... (El resto de métodos getOrderById, updateOrderState, etc., se mantienen igual)
+    // Solo asegúrate de copiar el resto de tu clase original aquí abajo.
     async updateOrderState(id_pedido: number, nuevoEstado: string): Promise<Order> {
         const order = await this.getOrderRepository().findOneBy({ id_pedido });
         if (!order) throw new NotFoundException(`Pedido con ID ${id_pedido} no encontrado.`);
-        
         order.estado = nuevoEstado;
         order.fecha_actualizacion = new Date();
-        
         return this.getOrderRepository().save(order);
     }
-
-    async getOrderById(id_pedido: number): Promise<Order> {
+    // ... incluir resto de métodos
+     async getOrderById(id_pedido: number): Promise<Order> {
         const order = await this.getOrderRepository().findOne({
             where: { id_pedido },
             relations: ['items', 'items.product', 'shipment'] 
@@ -140,7 +174,6 @@ export class OrderService {
         return order;
     }
 
-    // Funciones de consulta adicionales
     async getOrdersByUser(userId: number, page: number = 1, limit: number = 10) {
         const safePage = Math.max(1, page);
         const safeLimit = Math.max(1, limit);
@@ -223,7 +256,6 @@ export class OrderService {
             if (order.estado === 'anulado') throw new BadRequestException('El pedido ya está anulado.');
             if (order.estado === 'entregado') throw new BadRequestException('No se puede anular un pedido ya entregado.');
 
-            // Devolver productos al inventario
             for (const item of order.items) {
                 await this.inventoryService.increaseStock(item.id_producto, item.cantidad, queryRunner.manager);
                 await this.batchService.restoreBatchStock(item.id_lote, item.cantidad, queryRunner.manager);

@@ -9,12 +9,12 @@ export class Order {
     @PrimaryGeneratedColumn()
     id_pedido: number;
 
-    @Column({ name: 'id_usuario_cliente' }) // Mapeo explícito a columna
+    @Column({ name: 'id_usuario_cliente' })
     id_usuario_cliente: number;
 
     @Column({ length: 20 })
     tipo_pedido: string; 
-//modificacion del requerimiento del magister
+
     @Column({ length: 20 })
     metodo_pago: string; 
 
@@ -39,6 +39,14 @@ export class Order {
     @Column({ length: 255 })
     direccion_entrega: string;
 
+    // --- NUEVAS COLUMNAS PARA GEOLOCALIZACIÓN ---
+    @Column({ type: 'decimal', precision: 10, scale: 8, nullable: true })
+    latitud_entrega: number;
+
+    @Column({ type: 'decimal', precision: 10, scale: 8, nullable: true })
+    longitud_entrega: number;
+    // ---------------------------------------------
+
     @Column({ length: 20 })
     tipo_entrega: string; 
 
@@ -50,7 +58,6 @@ export class Order {
 
     @Column({ nullable: true })
     id_descuento_aplicado: number;
-
 
     @ManyToOne(() => User, (user) => user.orders)
     @JoinColumn({ name: 'id_usuario_cliente', referencedColumnName: 'id_usuario' })

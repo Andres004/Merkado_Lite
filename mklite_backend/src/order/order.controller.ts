@@ -1,15 +1,15 @@
 import {
-  Controller,
-  Get,
-  Post,
-  Patch,
-  Param,
-  Body,
-  ParseIntPipe,
-  Query,
-  UseGuards,
-  Req,
-  UnauthorizedException,
+    Controller,
+    Get,
+    Post,
+    Patch,
+    Param,
+    Body,
+    ParseIntPipe,
+    Query,
+    UseGuards,
+    Req,
+    UnauthorizedException,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { AuthGuard } from '@nestjs/passport';
@@ -27,6 +27,13 @@ export class CreateOrderDto {
     metodo_pago: string;
     direccion_entrega: string;
     tipo_entrega: string;
+    
+    // --- NUEVOS CAMPOS ---
+    latitud_entrega?: number;
+    longitud_entrega?: number;
+    costo_envio?: number; // El frontend nos manda el costo calculado
+    // ---------------------
+
     es_reserva?: boolean;
     fecha_hora_programada?: Date;
     id_descuento_aplicado?: number;
@@ -40,9 +47,22 @@ export class UpdateOrderStateDto {
     estado: string; 
 }
 
+// DTO para el endpoint de cálculo
+export class CalculateShippingDto {
+    userLat: number;
+    userLng: number;
+}
+
 @Controller('order')
 export class OrderController {
     constructor(private readonly orderService: OrderService) {}
+
+    // --- NUEVO ENDPOINT PARA CALCULAR ENVÍO ---
+    @Post('calculate-shipping')
+    calculateShipping(@Body() dto: CalculateShippingDto) {
+        return this.orderService.calculateShippingCost(dto.userLat, dto.userLng);
+    }
+    // ------------------------------------------
 
     @Post()
     async createOrder(@Body() dto: CreateOrderDto) {
@@ -57,7 +77,7 @@ export class OrderController {
         return this.orderService.getAllOrders(estado, fecha);
     }
 
-     @UseGuards(AuthGuard('jwt'))
+    @UseGuards(AuthGuard('jwt'))
     @Get('/my')
     async getMyOrders(
         @Req() req: Request & { user?: any },
@@ -71,7 +91,6 @@ export class OrderController {
     }
 
     @UseGuards(AuthGuard('jwt'))
-
     @Get('/:id_pedido')
     async getOrder(
         @Param('id_pedido', ParseIntPipe) id_pedido: number,
