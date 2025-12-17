@@ -1,13 +1,14 @@
 "use client";
 
 import React, { useEffect, useState, use } from 'react';
-import { Home, ChevronRight, Filter } from 'lucide-react';
+import { Home, ChevronRight, SlidersHorizontal } from 'lucide-react';
 import ProductCard from '../../components/ProductCard';
 import ProductSidebar from '../../components/ProductSidebar';
 import { getProductsByCategoryId } from '../../services/product.service';
 import { ProductModel, CategoryModel } from '../../models/product.model';
 import { getAllCategories } from '../../services/category.service';
 import { matchCategoryBySlug } from '../../utils/slugify';
+import Link from 'next/link';
 
 export default function CategoryPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params);
@@ -18,6 +19,7 @@ export default function CategoryPage({ params }: { params: Promise<{ slug: strin
   const [category, setCategory] = useState<CategoryModel | null>(null);
   const [loadingCategories, setLoadingCategories] = useState(true);
 
+  // 1. Cargar Categorías
   useEffect(() => {
     const loadCategories = async () => {
       const data = await getAllCategories();
@@ -27,6 +29,7 @@ export default function CategoryPage({ params }: { params: Promise<{ slug: strin
     loadCategories();
   }, []);
 
+  // 2. Buscar categoría por slug y cargar productos
   useEffect(() => {
     const fetchProducts = async (categoryId: number) => {
       setLoading(true);
@@ -46,76 +49,115 @@ export default function CategoryPage({ params }: { params: Promise<{ slug: strin
     }
   }, [categories, loadingCategories, slug]);
 
+  // --- Renderizado de Carga ---
   if (loadingCategories) {
     return (
-      <div className="min-h-[60vh] flex items-center justify-center bg-gray-50 text-gray-600">
-        Cargando categorías...
+      <div className="min-h-[60vh] flex items-center justify-center bg-white text-gray-500">
+        <div className="animate-pulse flex flex-col items-center">
+            <div className="h-4 w-4 bg-[#F40009] rounded-full mb-2 animate-bounce"></div>
+            Cargando...
+        </div>
       </div>
     );
   }
 
+  // --- Renderizado No Encontrado ---
   if (!category) {
     return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center bg-gray-50">
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">Categoría no encontrada</h1>
-        <p className="text-gray-500 mb-6">Lo sentimos, no encontramos la categoría "{slug}".</p>
-        <a href="/" className="bg-red-600 text-white px-6 py-2 rounded-md hover:bg-red-700 transition">
+      <div className="min-h-[60vh] flex flex-col items-center justify-center bg-white">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Categoría no encontrada</h1>
+        <p className="text-gray-500 mb-6">No pudimos encontrar "{slug}".</p>
+        <Link href="/" className="bg-[#F40009] text-white px-8 py-3 rounded-full font-bold hover:bg-red-700 transition shadow-lg">
           Volver al Inicio
-        </a>
+        </Link>
       </div>
     );
   }
 
+  // --- Renderizado Principal ---
   return (
-    <main className="bg-gray-50 min-h-screen pb-12">
-      <div className="relative bg-black border-b border-gray-800 shadow-md">
-        <div className="max-w-7xl mx-auto px-4 py-12 relative z-10">
-          <div className="flex items-center text-lg text-gray-300">
-            <a href="/" className="flex items-center hover:text-[#F40009] transition-colors">
-              <Home size={20} className="mr-2" />
-              Casa
-            </a>
-            <ChevronRight size={20} className="mx-3 text-gray-600" />
-            <span className="hover:text-[#F40009] cursor-pointer transition-colors">Categorías</span>
-            <ChevronRight size={20} className="mx-3 text-gray-600" />
-            <span className="font-bold text-[#F40009] tracking-wide">{category.nombre}</span>
-          </div>
+    <main className="bg-white min-h-screen pb-16">
+      
+      {/* 1. HEADER LIMPIO (Fondo Gris Claro) */}
+      <div className="bg-gray-50 border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 py-8">
+            
+            {/* Breadcrumbs (Rutas) */}
+            <nav className="flex items-center text-sm text-gray-500 mb-4">
+                <Link href="/" className="hover:text-[#F40009] transition-colors flex items-center text-gray-500">
+                    <Home size={16} className="mr-2" /> Inicio
+                </Link>
+                <ChevronRight size={16} className="mx-2 text-gray-400" />
+                <span className="text-gray-500">Categorías</span>
+                <ChevronRight size={16} className="mx-2 text-gray-400" />
+                
+                {/* Nombre de la categoría en el breadcrumb - FORZADO ROJO */}
+                <span className="font-bold !text-[#F40009]" style={{ color: '#F40009' }}>
+                    {category.nombre}
+                </span>
+            </nav>
+
+            {/* Título Estético */}
+            <div className="flex flex-col md:flex-row justify-between items-end gap-4">
+                <div>
+                    {/* AQUI ESTÁ EL CAMBIO FUERTE: Clase !text-[#F40009] y style inline */}
+                    <h1 
+                        className="text-4xl md:text-5xl font-extrabold tracking-tight !text-[#F40009]" 
+                        style={{ color: '#F40009' }}
+                    >
+                        {category.nombre}
+                    </h1>
+                    <p className="text-gray-500 mt-3 text-lg font-light">
+                        Explora nuestra selección fresca de {category.nombre.toLowerCase()}.
+                    </p>
+                </div>
+                
+                {/* Badge de Cantidad */}
+                <div className="bg-white border border-gray-200 px-5 py-2 rounded-full shadow-sm text-sm font-medium text-gray-600 flex items-center mb-1">
+                    <span className="w-2 h-2 rounded-full bg-[#F40009] mr-2 animate-pulse"></span>
+                    {loading ? "..." : products.length} productos
+                </div>
+            </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 pt-8">
-        <div className="flex flex-col lg:flex-row gap-8">
-          <aside className="w-full lg:w-1/4 hidden lg:block">
+      <div className="max-w-7xl mx-auto px-4 pt-10">
+        <div className="flex flex-col lg:flex-row gap-10">
+          
+          {/* 2. SIDEBAR */}
+          <aside className="w-full lg:w-1/4 hidden lg:block sticky top-24 h-fit">
             <ProductSidebar />
           </aside>
 
+          {/* 3. CONTENIDO PRINCIPAL */}
           <div className="w-full lg:w-3/4">
-            <div className="mb-8">
-              <h1 className="text-3xl md:text-4xl font-extrabold !text-[#F40009] mb-2">{category.nombre}</h1>
-              <p className="text-gray-600 max-w-2xl">
-                Explora los productos disponibles en la categoría {category.nombre}.
-              </p>
+            
+            {/* Barra de Herramientas */}
+            <div className="flex justify-between items-center mb-8 bg-white p-2 rounded-xl">
+               <span className="text-sm font-semibold text-gray-500 hidden sm:block">
+                  Mostrando resultados
+               </span>
+               <div className="flex gap-2 ml-auto">
+                   <button className="flex items-center text-sm font-bold text-gray-600 bg-gray-50 hover:bg-gray-100 px-4 py-2 rounded-lg border border-gray-200 transition-all">
+                      <SlidersHorizontal size={16} className="mr-2 text-[#F40009]" />
+                      Filtrar
+                   </button>
+               </div>
             </div>
 
-            <div className="flex justify-between items-center mb-6 bg-white p-4 rounded-lg shadow-sm border border-gray-100">
-              <p className="text-sm text-gray-500">
-                Mostrando <span className="font-bold text-gray-800">{products.length}</span> productos
-              </p>
-              <button className="flex items-center text-sm font-medium text-gray-600 hover:text-red-600">
-                <Filter size={18} className="mr-1" />
-                Filtrar
-              </button>
-            </div>
-
+            {/* Grid de Productos */}
             {loading ? (
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
-                {[...Array(5)].map((_, i) => (
-                  <div key={i} className="bg-gray-200 h-64 rounded-lg animate-pulse"></div>
+                {[...Array(8)].map((_, i) => (
+                  <div key={i} className="bg-gray-50 h-72 rounded-2xl animate-pulse border border-gray-100"></div>
                 ))}
               </div>
             ) : products.length === 0 ? (
-              <div className="text-center py-20 bg-white rounded-lg shadow-sm">
-                <p className="text-gray-500 text-lg">No hay productos disponibles en esta categoría aún.</p>
+              <div className="text-center py-20 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
+                <p className="text-gray-400 text-lg font-medium">No hay productos disponibles en esta categoría aún.</p>
+                <Link href="/" className="text-[#F40009] font-bold mt-2 hover:underline inline-block">
+                    Ver otras categorías
+                </Link>
               </div>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
