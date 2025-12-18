@@ -2,7 +2,7 @@ import axios from "axios";
 
 export const instance = axios.create({
   // url del backend
-  baseURL: 'http://localhost:3005', 
+  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3005',
   headers: {
     'Content-Type': 'application/json',
   },
