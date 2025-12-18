@@ -34,6 +34,8 @@ export class UserService {
     private userRepository: Repository<User>;
     private userRoleRepository: Repository<UserRole>;
     private roleRepository: Repository<Role>;
+    private static readonly CLIENT_ROLE_NAME = 'CLIENTE';
+
 
     constructor() {
         this.initRepositories();
@@ -87,23 +89,41 @@ export class UserService {
 
         const existing = await repo.findOneBy({ email: userData.email });
         if (existing) throw new ConflictException('El correo ya está registrado');
+         const { userRoles, id_rol, role, rol, accountStatus, accountstatus, estado_cuenta, ...safeUserData } = userData as any;
 
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(userData.password, salt);
 
         const newUser = repo.create({
-            ...userData,
+            ...safeUserData,
             password: hashedPassword,
             esAdminPrincipal: false,
-            accountStatus: userData.accountStatus || 'activo',
+            accountStatus: estado_cuenta || accountStatus || accountstatus || 'activo',
         } as User);
 
         const savedUser = await repo.save(newUser);
 
-        await this.assignRoleToUser(savedUser.id_usuario, 1);
+        const clientRole = await this.getDefaultClientRole();
+
+        await this.assignRoleToUser(savedUser.id_usuario, clientRole.id_rol);
+
 
         delete (savedUser as any).password;
         return savedUser;
+    }
+
+    private async getDefaultClientRole(): Promise<Role> {
+        const normalizedName = UserService.CLIENT_ROLE_NAME.toUpperCase();
+
+        const existingRole = await this.getRoleRepo()
+            .createQueryBuilder('role')
+            .where('UPPER(role.nombre) = :name', { name: normalizedName })
+            .getOne();
+
+        if (existingRole) return existingRole;
+
+        const newRole = this.getRoleRepo().create({ nombre: UserService.CLIENT_ROLE_NAME });
+        return this.getRoleRepo().save(newRole);
     }
 
     // --- FUNCIONALIDAD COMPLETA: Designar Admin Principal ---
