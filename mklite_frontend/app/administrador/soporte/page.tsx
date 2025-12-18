@@ -118,56 +118,88 @@ const SupportAdminPage = () => {
             <AdminSidebar />
           </div>
 
-          <div className="lg:col-span-3 bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <MessageCircle className="text-[#F40009]" />
+          <div className="lg:col-span-3 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            
+            {/* --- HEADER MEJORADO VISUALMENTE --- */}
+            <div className="flex items-center gap-4 mb-6 pb-4 border-b border-gray-100">
+              <div className="p-3 bg-red-50 rounded-full border border-red-100 shadow-sm flex items-center justify-center">
+                <MessageCircle className="text-[#F40009] w-6 h-6" />
+              </div>
               <div>
-                <h1 className="text-xl font-semibold text-gray-900">Soporte</h1>
-                <p className="text-sm text-gray-600">Responde los mensajes de los clientes que necesitan apoyo.</p>
+                <h1 className="text-2xl font-bold text-black">Centro de Soporte</h1>
+                <p className="text-sm text-gray-700 font-medium">Gestión de mensajes y atención al cliente.</p>
               </div>
             </div>
 
             {status && (
-              <div className="mb-4 text-sm text-yellow-700 bg-yellow-50 border border-yellow-200 rounded-lg p-3">{status}</div>
+              <div className="mb-4 text-sm font-medium text-yellow-800 bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                {status}
+              </div>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="md:col-span-1 border border-gray-100 rounded-lg overflow-hidden">
-                <div className="bg-gray-50 px-3 py-2 text-sm font-semibold text-gray-700 border-b border-gray-100">Chats asignados</div>
-                <div className="max-h-[400px] overflow-y-auto divide-y divide-gray-100">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-[600px]">
+              
+              {/* --- LISTA DE CHATS (Izquierda) --- */}
+              <div className="md:col-span-1 border border-gray-200 rounded-lg overflow-hidden flex flex-col bg-white">
+                <div className="bg-gray-100 px-4 py-3 text-sm font-bold text-black border-b border-gray-200">
+                  Chats Activos
+                </div>
+                <div className="flex-1 overflow-y-auto divide-y divide-gray-100">
                   {isLoadingChats ? (
-                    <div className="flex items-center justify-center py-6 text-gray-500 text-sm gap-2">
-                      <Loader2 className="animate-spin" size={16} /> Cargando chats...
+                    <div className="flex items-center justify-center py-6 text-gray-700 font-medium text-sm gap-2">
+                      <Loader2 className="animate-spin text-[#F40009]" size={16} /> Cargando...
                     </div>
                   ) : chats.length ? (
                     chats.map((chat) => (
                       <button
                         key={chat.id_chat}
                         onClick={() => setSelectedChat(chat)}
-                        className={`w-full text-left px-3 py-3 hover:bg-red-50 transition border-l-4 ${
-                          selectedChat?.id_chat === chat.id_chat ? 'border-[#F40009] bg-red-50' : 'border-transparent'
+                        className={`w-full text-left px-4 py-4 transition border-l-4 ${
+                          selectedChat?.id_chat === chat.id_chat 
+                            ? 'border-[#F40009] bg-red-50' 
+                            : 'border-transparent hover:bg-gray-50'
                         }`}
                       >
-                        <p className="font-semibold text-sm text-gray-900">{formatName(chat)}</p>
-                        <p className="text-xs text-gray-600">Estado: {chat.estado}</p>
-                        <p className="text-[11px] text-gray-500">Inicio: {new Date(chat.fecha_inicio).toLocaleString('es-BO')}</p>
+                        {/* Texto negro intenso para el nombre */}
+                        <p className="font-bold text-sm text-black mb-1">{formatName(chat)}</p>
+                        
+                        <div className="flex justify-between items-center">
+                           {/* Textos secundarios más oscuros (gray-700 en vez de gray-500) */}
+                          <span className="text-xs font-medium text-gray-700 bg-gray-200 px-2 py-0.5 rounded-full">
+                            {chat.estado}
+                          </span>
+                          <span className="text-[10px] font-semibold text-gray-600">
+                            {new Date(chat.fecha_inicio).toLocaleDateString('es-BO')}
+                          </span>
+                        </div>
                       </button>
                     ))
                   ) : (
-                    <p className="text-sm text-gray-500 px-3 py-4">No tienes chats asignados aún.</p>
+                    <p className="text-sm text-gray-700 font-medium px-4 py-6 text-center">No tienes chats asignados.</p>
                   )}
                 </div>
               </div>
 
-              <div className="md:col-span-2 border border-gray-100 rounded-lg flex flex-col">
-                <div className="bg-gray-50 px-3 py-2 text-sm font-semibold text-gray-700 border-b border-gray-100 flex items-center justify-between">
-                  <span>{selectedChat ? formatName(selectedChat) : 'Selecciona un chat'}</span>
-                  {selectedChat && <span className="text-xs text-gray-500">#{selectedChat.id_chat}</span>}
+              {/* --- AREA DE MENSAJES (Derecha) --- */}
+              <div className="md:col-span-2 border border-gray-200 rounded-lg flex flex-col bg-white shadow-sm">
+                
+                {/* Header del Chat Individual */}
+                <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+                  <div>
+                    <span className="text-sm font-bold text-black block">
+                      {selectedChat ? formatName(selectedChat) : 'Selecciona un chat'}
+                    </span>
+                    {selectedChat && (
+                      <span className="text-xs font-medium text-gray-600">ID Chat: #{selectedChat.id_chat}</span>
+                    )}
+                  </div>
                 </div>
-                <div className="flex-1 p-4 space-y-3 max-h-[340px] overflow-y-auto">
+
+                {/* Lista de Mensajes */}
+                <div className="flex-1 p-4 space-y-4 overflow-y-auto bg-white">
                   {isLoadingMessages ? (
-                    <div className="flex items-center justify-center text-gray-500 text-sm gap-2">
-                      <Loader2 className="animate-spin" size={16} /> Cargando mensajes...
+                    <div className="flex items-center justify-center h-full text-gray-700 font-medium text-sm gap-2">
+                      <Loader2 className="animate-spin text-[#F40009]" size={20} /> Cargando historial...
                     </div>
                   ) : messages.length ? (
                     messages.map((msg) => (
@@ -176,44 +208,52 @@ const SupportAdminPage = () => {
                         className={`flex ${msg.id_remitente === agentId ? 'justify-end' : 'justify-start'}`}
                       >
                         <div
-                          className={`px-3 py-2 rounded-2xl text-sm shadow-sm max-w-[80%] ${
+                          className={`px-4 py-2.5 rounded-2xl text-sm shadow-sm max-w-[85%] ${
                             msg.id_remitente === agentId
-                              ? 'bg-[#F40009] text-white rounded-br-none'
-                              : 'bg-gray-100 text-gray-800 rounded-bl-none'
+                              ? 'bg-[#F40009] text-white rounded-br-none' // Enviado (Rojo)
+                              : 'bg-gray-100 text-gray-900 font-medium rounded-bl-none border border-gray-200' // Recibido (Gris Oscuro)
                           }`}
                         >
-                          <p>{msg.contenido}</p>
-                          <span className="block text-[10px] mt-1 opacity-80">
+                          <p className="leading-relaxed">{msg.contenido}</p>
+                          <span className={`block text-[10px] mt-1 text-right ${
+                             msg.id_remitente === agentId ? 'text-red-100' : 'text-gray-500'
+                          }`}>
                             {new Date(msg.fecha_hora).toLocaleTimeString('es-BO', { hour: '2-digit', minute: '2-digit' })}
                           </span>
                         </div>
                       </div>
                     ))
                   ) : (
-                    <p className="text-sm text-gray-500">No hay mensajes para este chat.</p>
+                    <div className="flex flex-col items-center justify-center h-full text-gray-400">
+                        <MessageCircle size={40} className="mb-2 opacity-20" />
+                        <p className="text-sm font-medium text-gray-600">No hay mensajes en este chat.</p>
+                    </div>
                   )}
                   <div ref={bottomRef} />
                 </div>
 
-                <div className="border-t border-gray-100 p-3 bg-white flex items-center gap-2">
+                {/* Input Area */}
+                <div className="border-t border-gray-200 p-3 bg-gray-50 flex items-center gap-2 rounded-b-lg">
                   <input
                     type="text"
                     value={inputValue}
                     onChange={(e) => setInputValue(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                    placeholder="Escribe una respuesta"
-                    className="flex-1 text-sm px-3 py-2 border border-gray-200 rounded-full focus:outline-none focus:ring-1 focus:ring-[#F40009]"
+                    placeholder="Escribe una respuesta..."
+                    // AQUI CAMBIE: text-black y placeholder visible
+                    className="flex-1 text-sm text-black placeholder:text-gray-500 px-4 py-2.5 bg-white border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-[#F40009] focus:border-transparent transition-all shadow-sm"
                   />
                   <button
                     type="button"
                     onClick={handleSend}
                     disabled={!selectedChat || !agentId}
-                    className="bg-[#F40009] text-white rounded-full p-2 hover:bg-red-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="bg-[#F40009] text-white rounded-full p-2.5 hover:bg-red-700 transition shadow-md disabled:opacity-50 disabled:cursor-not-allowed transform active:scale-95"
                   >
                     <Send size={18} />
                   </button>
                 </div>
               </div>
+
             </div>
           </div>
         </div>

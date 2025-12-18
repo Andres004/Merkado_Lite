@@ -76,49 +76,49 @@ const estadoStyles: Record<
 > = {
   pendiente: {
     bg: "bg-yellow-100",
-    text: "text-yellow-700",
+    text: "text-yellow-800", // Más oscuro
     icon: Clock,
     label: "Pendiente",
   },
   procesando: {
     bg: "bg-yellow-100",
-    text: "text-yellow-700",
+    text: "text-yellow-800",
     icon: Clock,
     label: "Pendiente",
   },
   asignado: {
     bg: "bg-blue-100",
-    text: "text-blue-700",
+    text: "text-blue-800",
     icon: Truck,
     label: "Asignado",
   },
   en_camino: {
     bg: "bg-blue-100",
-    text: "text-blue-700",
+    text: "text-blue-800",
     icon: Truck,
     label: "En Camino",
   },
   entregado: {
     bg: "bg-green-100",
-    text: "text-green-700",
+    text: "text-green-800",
     icon: CheckCircle,
     label: "Entregado",
   },
   cancelado: {
     bg: "bg-red-100",
-    text: "text-red-700",
+    text: "text-red-800",
     icon: XCircle,
     label: "Cancelado",
   },
   anulado: {
     bg: "bg-red-100",
-    text: "text-red-700",
+    text: "text-red-800",
     icon: XCircle,
     label: "Cancelado",
   },
   fallido: {
     bg: "bg-gray-200",
-    text: "text-gray-700",
+    text: "text-gray-900",
     icon: AlertTriangle,
     label: "Fallido",
   },
@@ -133,7 +133,7 @@ const EstadoBadge: React.FC<{ estado: string }> = ({ estado }) => {
 
   return (
     <span
-      className={`inline-flex items-center px-3 py-1 text-xs font-semibold rounded-full ${style.bg} ${style.text}`}
+      className={`inline-flex items-center px-3 py-1 text-xs font-bold rounded-full ${style.bg} ${style.text}`}
     >
       <Icon size={14} className="mr-1" />
       {style.label}
@@ -153,7 +153,6 @@ const formatFecha = (fecha?: string) => {
   });
 };
 
-//const formatMoney = (value: number) => value.toFixed(2);
 const formatMoney = (value: unknown) => {
   const num =
     typeof value === 'number'
@@ -202,28 +201,30 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
   if (!isOpen) return null;
 
   return (
+    // CAMBIO: backdrop-blur-sm para efecto iPhone
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
       role="dialog"
       aria-modal="true"
       onClick={(e) => {
         if (e.target === e.currentTarget) onCancel();
       }}
     >
-      <div className="bg-white rounded-xl shadow-lg max-w-md w-full p-6">
+      <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 border border-gray-200">
         <div className="flex flex-col items-center text-center space-y-3">
-          <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
-            <AlertTriangle className="text-red-600" size={28} />
+          <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center">
+            <AlertTriangle className="text-[#F40009]" size={28} />
           </div>
-          <h3 className="text-xl font-bold text-gray-900">{title}</h3>
-          <p className="text-gray-700 font-semibold">{message}</p>
-          {description && <p className="text-gray-500 text-sm">{description}</p>}
+          {/* CAMBIO: Texto negro */}
+          <h3 className="text-xl font-bold text-black">{title}</h3>
+          <p className="text-gray-900 font-medium">{message}</p>
+          {description && <p className="text-gray-600 text-sm">{description}</p>}
         </div>
 
         <div className="mt-6 flex justify-end space-x-3">
           <button
             onClick={onCancel}
-            className="px-4 py-2 rounded-lg border text-gray-700 hover:bg-gray-50"
+            className="px-4 py-2 rounded-lg border border-gray-300 text-gray-800 font-medium hover:bg-gray-50 transition"
             disabled={loading}
           >
             {cancelText}
@@ -231,7 +232,7 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
           <button
             onClick={onConfirm}
             disabled={loading}
-            className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-50"
+            className="px-4 py-2 rounded-lg bg-[#F40009] text-white font-medium hover:bg-red-700 disabled:opacity-50 transition shadow-sm"
           >
             {loading ? 'Procesando...' : confirmText}
           </button>
@@ -470,18 +471,18 @@ export default function AdminPedidosPage() {
             <AdminSidebar />
           </aside>
 
-          <main className="flex-1 bg-white rounded-lg shadow-md p-6">
-            <h1 className="text-3xl font-extrabold text-gray-900 mb-6 border-b pb-3">
+          <main className="flex-1 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h1 className="text-3xl font-extrabold text-black mb-6 border-b border-gray-100 pb-3">
               Gestión de Pedidos
             </h1>
 
             {error && (
-              <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-700 border border-red-200">
+              <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-700 border border-red-100 font-medium">
                 {error}
               </div>
             )}
             {successMessage && (
-              <div className="mb-4 rounded-md bg-green-50 p-3 text-sm text-green-700 border border-green-200">
+              <div className="mb-4 rounded-md bg-green-50 p-3 text-sm text-green-700 border border-green-100 font-medium">
                 {successMessage}
               </div>
             )}
@@ -490,22 +491,24 @@ export default function AdminPedidosPage() {
               <div className="relative flex-grow w-full md:w-auto">
                 <Search
                   size={20}
-                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500"
                 />
+                {/* CAMBIO: Texto negro en input */}
                 <input
                   type="text"
                   placeholder="Buscar por ID o Cliente..."
                   value={busqueda}
                   onChange={(e) => setBusqueda(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500 shadow-sm"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-[#F40009] focus:border-[#F40009] shadow-sm text-black"
                 />
               </div>
 
               <div className="relative w-full md:w-48">
+                {/* CAMBIO: Texto negro en select */}
                 <select
                   value={filtroEstado}
                   onChange={(e) => setFiltroEstado(e.target.value)}
-                  className="w-full appearance-none bg-white border border-gray-300 text-gray-700 py-2 pl-4 pr-10 rounded-lg focus:ring-red-500 focus:border-red-500 shadow-sm"
+                  className="w-full appearance-none bg-white border border-gray-300 text-black font-medium py-2 pl-4 pr-10 rounded-lg focus:ring-[#F40009] focus:border-[#F40009] shadow-sm"
                 >
                   <option value="Todos">Filtrar por Estado: Todos</option>
                   {estadosDisponibles
@@ -518,7 +521,7 @@ export default function AdminPedidosPage() {
                 </select>
                 <ChevronDown
                   size={16}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none text-gray-500"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none text-black"
                 />
               </div>
 
@@ -527,11 +530,12 @@ export default function AdminPedidosPage() {
                   type="date"
                   value={filtroFecha}
                   onChange={(e) => manejarCambioFecha(e.target.value)}
-                  className="w-full md:w-48 border border-gray-300 rounded-lg px-3 py-2 shadow-sm focus:ring-red-500 focus:border-red-500"
+                  // CAMBIO: Texto negro
+                  className="w-full md:w-48 border border-gray-300 rounded-lg px-3 py-2 shadow-sm focus:ring-[#F40009] focus:border-[#F40009] text-black font-medium"
                 />
                 <button
                   onClick={limpiarFiltroFecha}
-                  className="px-3 py-2 text-sm border rounded-lg bg-gray-100 hover:bg-gray-200 disabled:opacity-50"
+                  className="px-3 py-2 text-sm border border-gray-300 rounded-lg bg-gray-50 hover:bg-gray-100 disabled:opacity-50 text-gray-800 font-medium"
                   disabled={!filtroFecha}
                 >
                   Limpiar filtro
@@ -539,34 +543,35 @@ export default function AdminPedidosPage() {
               </div>
             </div>
 
-            <div className="overflow-x-auto bg-white rounded-xl border border-gray-100 shadow-sm">
+            <div className="overflow-x-auto bg-white rounded-xl border border-gray-200 shadow-sm">
               {loading ? (
-                <div className="p-6 text-center text-gray-500">Cargando pedidos...</div>
+                <div className="p-6 text-center text-gray-600 font-medium">Cargando pedidos...</div>
               ) : pedidosFiltrados.length === 0 ? (
-                <div className="p-6 text-center text-gray-500">No hay pedidos disponibles.</div>
+                <div className="p-6 text-center text-gray-600 font-medium">No hay pedidos disponibles.</div>
               ) : (
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
+                    {/* CAMBIO: Headers negros */}
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-bold text-gray-900 uppercase tracking-wider">
                         ID Pedido
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-bold text-gray-900 uppercase tracking-wider">
                         Cliente
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-bold text-gray-900 uppercase tracking-wider">
                         Total
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-bold text-gray-900 uppercase tracking-wider">
                         Estado
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-bold text-gray-900 uppercase tracking-wider">
                         Tipo Entrega
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-bold text-gray-900 uppercase tracking-wider">
                         Fecha/Hora
                       </th>
-                      <th className="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
                         Acciones
                       </th>
                     </tr>
@@ -574,24 +579,25 @@ export default function AdminPedidosPage() {
                   <tbody className="bg-white divide-y divide-gray-200">
                     {pedidosFiltrados.map((pedido) => (
                       <tr key={pedido.id_pedido} className="hover:bg-red-50 transition duration-150">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-black">
                           #{pedido.id_pedido}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                        {/* CAMBIO: Texto oscuro */}
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800 font-medium">
                           {pedido.client
                             ? `${pedido.client.nombre || ""} ${pedido.client.apellido || ""}`
                             : "-"}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-[#F40009]">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-[#F40009]">
                           Bs. {formatMoney(pedido.total)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <EstadoBadge estado={pedido.estado} />
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 capitalize">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800 font-medium capitalize">
                           {pedido.tipo_entrega || "-"}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">
                           {formatFecha(pedido.fecha_creacion)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
@@ -601,14 +607,14 @@ export default function AdminPedidosPage() {
                               formatEstadoClave(pedido.estado) !== "entregado" && (
                                 <button
                                   onClick={() => abrirAsignacion(pedido)}
-                                  className="text-blue-600 hover:text-blue-800 transition duration-150 whitespace-nowrap text-xs sm:text-sm"
+                                  className="text-blue-700 hover:text-blue-900 font-semibold transition duration-150 whitespace-nowrap text-xs sm:text-sm"
                                 >
                                   Asignar Repartidor
                                 </button>
                               )}
                             <button
                               onClick={() => abrirDetalle(pedido)}
-                              className="text-gray-500 hover:text-gray-700 transition duration-150 whitespace-nowrap text-xs sm:text-sm"
+                              className="text-gray-800 hover:text-black font-semibold transition duration-150 whitespace-nowrap text-xs sm:text-sm"
                             >
                               Ver Detalle
                             </button>
@@ -617,7 +623,7 @@ export default function AdminPedidosPage() {
                               formatEstadoClave(pedido.estado) !== "anulado" && (
                                 <button
                                   onClick={() => abrirCancelacion(pedido)}
-                                  className="text-red-500 hover:text-red-700 transition duration-150 whitespace-nowrap text-xs sm:text-sm"
+                                  className="text-red-600 hover:text-red-800 font-semibold transition duration-150 whitespace-nowrap text-xs sm:text-sm"
                                 >
                                   Cancelar Pedido
                                 </button>
@@ -626,7 +632,7 @@ export default function AdminPedidosPage() {
                               formatEstadoClave(pedido.estado) === "en_camino" && (
                                 <button
                                   onClick={() => marcarEntregado(pedido)}
-                                  className="text-green-600 hover:text-green-800 transition duration-150 whitespace-nowrap text-xs sm:text-sm"
+                                  className="text-green-700 hover:text-green-900 font-semibold transition duration-150 whitespace-nowrap text-xs sm:text-sm"
                                 >
                                   Marcar Entregado
                                 </button>
@@ -640,16 +646,16 @@ export default function AdminPedidosPage() {
               )}
             </div>
 
-            <div className="mt-4 flex justify-between items-center text-sm text-gray-600">
+            <div className="mt-4 flex justify-between items-center text-sm text-gray-800 font-medium">
               <span>
                 Mostrando {pedidosFiltrados.length} de {orders.length} pedidos
               </span>
               <div className="flex space-x-2">
-                <button className="px-3 py-1 border rounded-lg bg-gray-100" disabled>
+                <button className="px-3 py-1 border rounded-lg bg-gray-100 text-gray-400 cursor-not-allowed" disabled>
                   Anterior
                 </button>
                 <button className="px-3 py-1 border rounded-lg bg-[#F40009] text-white">1</button>
-                <button className="px-3 py-1 border rounded-lg bg-gray-100" disabled>
+                <button className="px-3 py-1 border rounded-lg bg-gray-100 text-gray-400 cursor-not-allowed" disabled>
                   Siguiente
                 </button>
               </div>
@@ -659,103 +665,107 @@ export default function AdminPedidosPage() {
       </div>
 
       {detalleAbierto && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 p-4">
-          <div className="bg-white rounded-xl shadow-lg max-w-2xl w-full p-6 relative">
-            <h2 className="text-2xl font-bold mb-4">Detalle del Pedido</h2>
+        // CAMBIO: Blur effect
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full p-6 relative border border-gray-200">
+            <h2 className="text-2xl font-bold mb-6 text-black border-b border-gray-100 pb-2">Detalle del Pedido</h2>
             {detalleLoading ? (
-              <div className="py-6 text-center text-gray-500">Cargando detalle...</div>
+              <div className="py-6 text-center text-gray-600 font-medium">Cargando detalle...</div>
             ) : detalleData ? (
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-8 text-sm">
+                  {/* CAMBIO: Etiquetas Negras Bold, Valores Gris Oscuro */}
                   <div>
-                    <p className="text-gray-500">Cliente</p>
-                    <p className="font-semibold">
+                    <p className="text-black font-bold mb-1">Cliente</p>
+                    <p className="text-gray-800 font-medium">
                       {detalleData.client
                         ? `${detalleData.client.nombre || ""} ${detalleData.client.apellido || ""}`
                         : "-"}
                     </p>
                   </div>
                   <div>
-                    <p className="text-gray-500">Método de Pago</p>
-                    <p className="font-semibold capitalize">{detalleData.metodo_pago || "-"}</p>
+                    <p className="text-black font-bold mb-1">Método de Pago</p>
+                    <p className="text-gray-800 font-medium capitalize">{detalleData.metodo_pago || "-"}</p>
                   </div>
                   <div>
-                    <p className="text-gray-500">Dirección de Entrega</p>
-                    <p className="font-semibold">{detalleData.direccion_entrega || "-"}</p>
+                    <p className="text-black font-bold mb-1">Dirección de Entrega</p>
+                    <p className="text-gray-800 font-medium">{detalleData.direccion_entrega || "-"}</p>
                   </div>
                   <div>
-                    <p className="text-gray-500">Tipo de Entrega</p>
-                    <p className="font-semibold capitalize">{detalleData.tipo_entrega || "-"}</p>
+                    <p className="text-black font-bold mb-1">Tipo de Entrega</p>
+                    <p className="text-gray-800 font-medium capitalize">{detalleData.tipo_entrega || "-"}</p>
                   </div>
                   <div>
-                    <p className="text-gray-500">Programación</p>
-                    <p className="font-semibold">{formatFecha(detalleData.fecha_creacion)}</p>
+                    <p className="text-black font-bold mb-1">Programación</p>
+                    <p className="text-gray-800 font-medium">{formatFecha(detalleData.fecha_creacion)}</p>
                   </div>
                   <div>
-                    <p className="text-gray-500">Estado</p>
-                    <EstadoBadge estado={detalleData.estado} />
+                    <p className="text-black font-bold mb-1">Estado</p>
+                    <div className="mt-1">
+                      <EstadoBadge estado={detalleData.estado} />
+                    </div>
                   </div>
                 </div>
 
-                <div>
-                  <p className="text-gray-700 font-semibold mb-2">Productos</p>
-                  <div className="space-y-2 text-sm text-gray-700">
+                <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
+                  <p className="text-black font-bold mb-3 text-base">Productos</p>
+                  <div className="space-y-2 text-sm text-gray-800 font-medium">
                     {detalleData.items?.map((item, idx) => (
-                      <div key={idx} className="flex justify-between">
+                      <div key={idx} className="flex justify-between border-b border-gray-200 pb-1 last:border-0 last:pb-0">
                         <span>
-                          ({item.cantidad}x) {item.product?.nombre_producto || "Producto"}
+                          <span className="font-bold">({item.cantidad}x)</span> {item.product?.nombre_producto || "Producto"}
                         </span>
-                        <span>Bs. {formatMoney(item.cantidad * item.precio_unitario)}</span>
+                        <span className="font-bold text-gray-900">Bs. {formatMoney(item.cantidad * item.precio_unitario)}</span>
                       </div>
                     ))}
                   </div>
-                  <div className="mt-3 text-right font-semibold">
-                    TOTAL: Bs. {formatMoney(detalleData.total)}
+                  <div className="mt-4 text-right font-bold text-lg text-black border-t border-gray-200 pt-2">
+                    TOTAL: <span className="text-[#F40009]">Bs. {formatMoney(detalleData.total)}</span>
                   </div>
                 </div>
 
                 {detalleData.shipment && (
-                  <div className="border-t pt-3 text-sm">
-                    <p className="text-gray-700 font-semibold mb-2">Envío</p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="border-t border-gray-200 pt-4 text-sm">
+                    <p className="text-black font-bold mb-3 text-base">Información de Envío</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <p className="text-gray-500">ID Envío</p>
-                        <p className="font-semibold">#{detalleData.shipment.id_envio}</p>
+                        <p className="text-black font-bold mb-1">ID Envío</p>
+                        <p className="text-gray-800 font-medium">#{detalleData.shipment.id_envio}</p>
                       </div>
                       <div>
-                        <p className="text-gray-500">Estado de Envío</p>
-                        <p className="font-semibold capitalize">{detalleData.shipment.estado_envio}</p>
+                        <p className="text-black font-bold mb-1">Estado de Envío</p>
+                        <p className="text-gray-800 font-medium capitalize">{detalleData.shipment.estado_envio}</p>
                       </div>
                       <div>
-                        <p className="text-gray-500">Repartidor</p>
-                        <p className="font-semibold">
+                        <p className="text-black font-bold mb-1">Repartidor</p>
+                        <p className="text-gray-800 font-medium">
                           {getDriverName(detalleData.shipment.id_repartidor)}
                         </p>
                       </div>
                       <div>
-                        <p className="text-gray-500">Sector</p>
-                        <p className="font-semibold">{detalleData.shipment.sector || "-"}</p>
+                        <p className="text-black font-bold mb-1">Sector</p>
+                        <p className="text-gray-800 font-medium">{detalleData.shipment.sector || "-"}</p>
                       </div>
                       <div>
-                        <p className="text-gray-500">Fecha salida</p>
-                        <p className="font-semibold">{formatFecha(detalleData.shipment.fecha_salida)}</p>
+                        <p className="text-black font-bold mb-1">Fecha salida</p>
+                        <p className="text-gray-800 font-medium">{formatFecha(detalleData.shipment.fecha_salida)}</p>
                       </div>
                       <div>
-                        <p className="text-gray-500">Fecha entrega</p>
-                        <p className="font-semibold">{formatFecha(detalleData.shipment.fecha_entrega)}</p>
+                        <p className="text-black font-bold mb-1">Fecha entrega</p>
+                        <p className="text-gray-800 font-medium">{formatFecha(detalleData.shipment.fecha_entrega)}</p>
                       </div>
                     </div>
                   </div>
                 )}
               </div>
             ) : (
-              <div className="py-6 text-center text-gray-500">No hay información disponible.</div>
+              <div className="py-6 text-center text-gray-600">No hay información disponible.</div>
             )}
 
-            <div className="mt-6 flex justify-end space-x-3">
+            <div className="mt-8 flex justify-end space-x-3">
               <button
                 onClick={() => setDetalleAbierto(false)}
-                className="px-4 py-2 rounded-lg border text-gray-700 hover:bg-gray-50"
+                className="px-5 py-2.5 rounded-lg border border-gray-300 text-gray-900 font-bold hover:bg-gray-50 transition"
               >
                 Cerrar
               </button>
@@ -765,16 +775,20 @@ export default function AdminPedidosPage() {
       )}
 
       {assignOpen && selectedOrder && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 p-4">
-          <div className="bg-white rounded-xl shadow-lg max-w-md w-full p-6">
-            <h3 className="text-xl font-bold mb-4">Asignar Repartidor</h3>
-            <p className="text-sm text-gray-600 mb-2">Pedido ID: #{selectedOrder.id_pedido}</p>
-            <div className="mb-4">
-              <label className="block text-sm text-gray-600 mb-1">Asignar a:</label>
+        // CAMBIO: Blur effect
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 border border-gray-200">
+            <h3 className="text-xl font-bold mb-4 text-black">Asignar Repartidor</h3>
+            <p className="text-sm text-gray-800 font-medium mb-4 bg-gray-50 p-2 rounded-lg border border-gray-100">
+              Pedido ID: <span className="font-bold">#{selectedOrder.id_pedido}</span>
+            </p>
+            <div className="mb-6">
+              <label className="block text-sm font-bold text-gray-900 mb-2">Asignar a:</label>
+              {/* CAMBIO: Select negro */}
               <select
                 value={driverSeleccionado ?? ""}
                 onChange={(e) => setDriverSeleccionado(Number(e.target.value))}
-                className="w-full border rounded-lg px-3 py-2"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-black font-medium focus:ring-[#F40009] focus:border-[#F40009]"
               >
                 <option value="">Selecciona un repartidor</option>
                 {drivers.map((driver) => (
@@ -787,7 +801,7 @@ export default function AdminPedidosPage() {
             <div className="flex justify-end space-x-3">
               <button
                 onClick={() => setAssignOpen(false)}
-                className="px-4 py-2 rounded-lg border text-gray-700 hover:bg-gray-50"
+                className="px-4 py-2 rounded-lg border border-gray-300 text-gray-800 font-bold hover:bg-gray-50 transition"
                 disabled={actionLoading}
               >
                 Cancelar
@@ -795,7 +809,7 @@ export default function AdminPedidosPage() {
               <button
                 onClick={confirmarAsignacion}
                 disabled={!driverSeleccionado || actionLoading}
-                className="px-4 py-2 rounded-lg bg-[#F40009] text-white hover:bg-red-600 disabled:opacity-50"
+                className="px-4 py-2 rounded-lg bg-[#F40009] text-white font-bold hover:bg-red-700 disabled:opacity-50 transition shadow-md"
               >
                 {actionLoading ? "Guardando..." : "Confirmar Asignación"}
               </button>
