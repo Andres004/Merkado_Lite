@@ -1,499 +1,765 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
-import AdminSidebar from '../components/AdminSidebar'; // Importamos el sidebar creado
-import { MoreVertical, DollarSign, RotateCw, ShoppingCart, Loader2, AlertTriangle } from 'lucide-react';
-import { getOrders, cancelOrder } from '../services/order.service';
-import { getRefundsByDateRange } from '../services/refund.service';
-import { getAllInventoryService } from '../services/inventory.service';
+import { PlusCircle, RefreshCcw, Search, Trash2 } from 'lucide-react';
+import AdminSidebar from '../././components/AdminSidebar';
+import Modal from '../components/Modal';
+import { ProductModel } from '../models/product.model';
+import { DiscountModel } from '../models/discount.model';
+import { getOrders, getOrderDetail } from '../services/order.service';
+import { getRefunds, createRefund, createRefundItem } from '../services/refund.service';
+import {
+    fetchDiscounts,
+    fetchProductCategories,
+    fetchProductsForSale,
+    validateCouponCode,
+    createSale,
+} from '../services/sale.service';
 
-interface ProductInfo {
-  nombre?: string;
+interface TransactionRow {
+    id: string;
+    tipo: 'Venta Online' | 'Venta Presencial' | 'Devolución';
+    fechaHora: string;
+    cliente: string;
+    idPedido: string;
+    total: number;
+    numProductos: number;
 }
 
-interface OrderItem {
-  id_producto: number;
-  cantidad: number;
-  precio_unitario?: number;
-  product?: ProductInfo;
+interface SaleItemState {
+    product: ProductModel;
+    quantity: number;
+    unitPrice: number;
+    discountPerUnit: number;
+    discountLabel?: string;
+    discountId?: number;
 }
 
-interface OrderData {
-  id_pedido: number;
-  estado?: string;
-  total?: number;
-  fecha_creacion?: string;
-  items?: OrderItem[];
+interface OrderDetailItem {
+    id_producto: number;
+    cantidad: number;
+    precio_unitario: number;
+    product?: ProductModel;
 }
 
-interface RefundData {
-  id_devolucion: number;
-  monto_total: number;
-  fecha: string;
-}
-
-interface InventoryItem {
-  id_producto: number;
-  stock_disponible: number;
-  stock_minimo: number;
-  product?: {
-    nombre?: string;
-  };
-}
-
-interface KpiCardProps {
-  title: string;
-  value: string;
-  subtext: string;
-  icon: React.ElementType;
-  color: string;
-}
-
-interface HourlySale {
-  hour: string;
-  sales: number;
-}
-
-interface TopProductData {
-  name: string;
-  sales: number;
-}
-
-const formatCurrency = (value: number) =>
-  `Bs. ${Number(value || 0).toLocaleString('es-BO', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`;
-
-const normalizeEstado = (estado?: string) => (estado || '').toLowerCase();
-
-const getDateInputValue = (date: Date) => date.toISOString().slice(0, 10);
-
-const getDateRangeStrings = (dateValue: string) => {
-  const baseDate = new Date(dateValue);
-  const start = new Date(baseDate);
-  start.setHours(0, 0, 0, 0);
-  const end = new Date(baseDate);
-  end.setHours(23, 59, 59, 999);
-  return { start: start.toISOString(), end: end.toISOString() };
+const isDiscountActive = (discount: DiscountModel) => {
+    const now = new Date();
+    const start = new Date(discount.fecha_inicio);
+    const end = new Date(discount.fecha_final);
+    return discount.estado_de_oferta && now >= start && now <= end;
 };
 
-/**
- * Gráfico de Línea SVG para Ventas Por Hora.
- */
-const SalesLineChart: React.FC<{ data: HourlySale[] }> = ({ data }) => {
-  const width = 600;
-  const height = 200;
-  const padding = 30;
+const getCategoryIdsByProduct = (assignments: Array<{ id_producto: number; id_categoria: number }>, id_producto: number) =>
+    assignments.filter((a) => a.id_producto === id_producto).map((a) => a.id_categoria);
 
-  const maxDataSales = data.length ? Math.max(...data.map((d) => d.sales)) : 0;
-  const maxSales = Math.max(50, Math.ceil((maxDataSales || 1) / 50) * 50);
-  const xUnit = data.length > 1 ? (width - 2 * padding) / (data.length - 1) : 0;
-  const yUnit = (height - 2 * padding) / (maxSales || 1);
+const calculateProductDiscount = (
+    product: ProductModel,
+    discounts: DiscountModel[],
+    assignments: Array<{ id_producto: number; id_categoria: number; categoria?: { id_categoria: number; nombre: string } }>,
+) => {
+    const activeDiscounts = discounts.filter(isDiscountActive);
+    const categoryIds = getCategoryIdsByProduct(assignments, product.id_producto);
 
-  const points =
-    data.length > 0
-      ? data
-          .map((d, i) => {
-            const x = padding + i * xUnit;
-            const y = height - padding - d.sales * yUnit;
-            return `${x},${y}`;
-          })
-          .join(' ')
-      : '';
+    let selected: { amount: number; discount: DiscountModel | null } = { amount: 0, discount: null };
 
-  const yLines = [0, maxSales / 4, maxSales / 2, (3 * maxSales) / 4, maxSales].map((value, index) => {
-    const y = height - padding - value * yUnit;
-    return (
-      <g key={`y-axis-${index}`}>
-        <line x1={padding} y1={y} x2={width - padding} y2={y} stroke="#e5e7eb" strokeDasharray="3 3" />
-        <text x={padding - 5} y={y + 5} textAnchor="end" className="text-xs fill-gray-500">
-          {value.toFixed(0)} Bs.
-        </text>
-      </g>
-    );
-  });
+    for (const discount of activeDiscounts) {
+        const appliesToProduct =
+            discount.aplica_a === 'ALL' ||
+            (discount.aplica_a === 'PRODUCT' && discount.productos?.some((p) => p.id_producto === product.id_producto)) ||
+            (discount.aplica_a === 'CATEGORY' && discount.categorias?.some((c) => categoryIds.includes(c.id_categoria)));
 
-  const xLabels = data.map((d, i) => {
-    const x = padding + i * xUnit;
-    return (
-      <text key={d.hour} x={x} y={height - padding + 15} textAnchor="middle" className="text-xs fill-gray-700">
-        {d.hour}
-      </text>
-    );
-  });
+        if (!appliesToProduct) continue;
 
-  return (
-    <div className="relative h-full">
-      <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full">
-        {yLines}
+        const percAmount = discount.porcentaje_descuento
+            ? (product.precio_venta * discount.porcentaje_descuento) / 100
+            : 0;
+        const fixedAmount = discount.monto_fijo ?? 0;
+        const amount = Math.max(percAmount, fixedAmount);
 
-        {data.length > 0 && (
-          <>
-            <polyline
-              fill="none"
-              stroke="#F40009"
-              strokeWidth="4"
-              points={points}
-              strokeLinejoin="round"
-              strokeLinecap="round"
-            />
-
-            {data.map((d, i) => {
-              const x = padding + i * xUnit;
-              const y = height - padding - d.sales * yUnit;
-              return <circle key={`dot-${i}`} cx={x} cy={y} r="4" fill="#F40009" stroke="white" strokeWidth="2" />;
-            })}
-          </>
-        )}
-
-        <line x1={padding} y1={height - padding} x2={width - padding} y2={height - padding} stroke="#d1d5db" />
-        {xLabels}
-      </svg>
-      {data.every((point) => point.sales === 0) && (
-        <div className="absolute inset-0 flex items-center justify-center text-sm text-gray-500">
-          Sin ventas registradas en este horario
-        </div>
-      )}
-    </div>
-  );
-};
-
-/**
- * Gráfico de Barras SVG para Productos Más Vendidos.
- */
-const TopProductsBarChart: React.FC<{ data: TopProductData[] }> = ({ data }) => {
-  const width = 300;
-  const height = 200;
-  const padding = 20;
-  const barWidth = 20;
-
-  const maxSales = data.length ? Math.max(...data.map((d) => d.sales)) : 0;
-  const safeMax = maxSales || 1;
-  const totalBars = data.length || 1;
-  const groupSpace = (width - 2 * padding) / totalBars;
-
-  const bars = data.map((d, i) => {
-    const x = padding + i * groupSpace + groupSpace / 2 - barWidth / 2;
-    const barHeight = (d.sales / safeMax) * (height - 2 * padding);
-    const y = height - padding - barHeight;
-
-    return (
-      <g key={d.name}>
-        <rect
-          x={x}
-          y={y}
-          width={barWidth}
-          height={barHeight}
-          fill="#F40009"
-          rx="4"
-          ry="4"
-          className="hover:fill-red-700 transition-colors duration-150"
-        />
-        <text
-          x={x + barWidth / 2}
-          y={height - padding + 5}
-          textAnchor="middle"
-          className="text-xs fill-gray-700"
-          transform={`rotate(45, ${x + barWidth / 2}, ${height - padding + 5}) translate(0, 10)`}
-        >
-          {d.name.split(' ').map((word, idx) => (
-            <tspan key={idx} x={x + barWidth / 2} dy={idx === 0 ? 0 : '1.2em'}>
-              {word}
-            </tspan>
-          ))}
-        </text>
-      </g>
-    );
-  });
-
-  return (
-    <div className="relative h-full">
-      <svg viewBox={`0 0 ${width} ${height + 40}`} className="w-full h-full overflow-visible">
-        <g transform={`translate(0, 0)`}>{bars}</g>
-      </svg>
-      {data.length === 0 && (
-        <div className="absolute inset-0 flex items-center justify-center text-sm text-gray-500">
-          Sin productos vendidos
-        </div>
-      )}
-    </div>
-  );
-};
-
-const KpiCard: React.FC<KpiCardProps> = ({ title, value, subtext, icon: Icon, color }) => (
-  <div className="bg-white rounded-xl shadow-lg p-5 border border-gray-100 flex flex-col justify-between">
-    <div className="flex justify-between items-start">
-      <div>
-        <h3 className="text-sm font-semibold text-gray-500 uppercase">{title}</h3>
-        <p className="text-3xl font-extrabold text-gray-900 mt-1">{value}</p>
-      </div>
-      <div className={`p-2 rounded-full ${color.split(' ')[1]}`}>
-        <Icon size={20} className={color.split(' ')[0]} />
-      </div>
-    </div>
-    <div className="flex justify-between items-center mt-4 pt-3 border-t border-gray-100">
-      <span className="text-xs font-medium text-gray-500">{subtext}</span>
-      <MoreVertical size={16} className="text-gray-400 cursor-pointer hover:text-gray-700 transition" />
-    </div>
-  </div>
-);
-
-export default function AdminDashboardPage() {
-  const [selectedDate, setSelectedDate] = useState<string>(getDateInputValue(new Date()));
-  const [orders, setOrders] = useState<OrderData[]>([]);
-  const [refunds, setRefunds] = useState<RefundData[]>([]);
-  const [inventory, setInventory] = useState<InventoryItem[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
-  const [cancellingId, setCancellingId] = useState<number | null>(null);
-
-  const fetchDashboardData = async (dateValue: string) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const { start, end } = getDateRangeStrings(dateValue);
-      const [ordersData, refundsData, inventoryData] = await Promise.all([
-        getOrders({ fecha: dateValue }),
-        getRefundsByDateRange(start, end),
-        getAllInventoryService(),
-      ]);
-
-      setOrders(ordersData || []);
-      setRefunds(refundsData || []);
-      setInventory(inventoryData || []);
-    } catch (err) {
-      console.error(err);
-      setError('No se pudieron cargar los datos del panel.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchDashboardData(selectedDate);
-  }, [selectedDate]);
-
-  const isOrderCountable = (estado?: string) => {
-    const normalized = normalizeEstado(estado);
-    return !['anulado', 'cancelado', 'devuelto', 'fallido'].includes(normalized);
-  };
-
-  const validOrders = useMemo(() => orders.filter((order) => isOrderCountable(order.estado)), [orders]);
-
-  const hourlySales = useMemo(() => {
-    const hoursRange = Array.from({ length: 11 }, (_, i) => 8 + i);
-    return hoursRange.map((hour) => {
-      const total = validOrders.reduce((sum, order) => {
-        const orderDate = order.fecha_creacion ? new Date(order.fecha_creacion) : null;
-        if (orderDate && !isNaN(orderDate.getTime()) && orderDate.getHours() === hour) {
-          return sum + Number(order.total || 0);
+        if (amount > selected.amount) {
+            selected = { amount, discount };
         }
-        return sum;
-      }, 0);
-      return { hour: `${hour}:00`, sales: total };
-    });
-  }, [validOrders]);
-
-  const topProducts = useMemo(() => {
-    const productMap = new Map<number, TopProductData>();
-
-    validOrders.forEach((order) => {
-      order.items?.forEach((item) => {
-        const current = productMap.get(item.id_producto) || {
-          name: item.product?.nombre || `Producto ${item.id_producto}`,
-          sales: 0,
-        };
-        current.sales += Number(item.cantidad || 0);
-        productMap.set(item.id_producto, current);
-      });
-    });
-
-    return Array.from(productMap.values())
-      .sort((a, b) => b.sales - a.sales)
-      .slice(0, 6);
-  }, [validOrders]);
-
-  const totalSales = useMemo(
-    () => validOrders.reduce((sum, order) => sum + Number(order.total || 0), 0),
-    [validOrders],
-  );
-
-  const refundAmount = useMemo(
-    () => refunds.reduce((sum, refund) => sum + Number(refund.monto_total || 0), 0),
-    [refunds],
-  );
-
-  const stockAlerts = useMemo(
-    () => inventory.filter((item) => item.stock_disponible <= item.stock_minimo),
-    [inventory],
-  );
-
-  const pendingOrders = useMemo(
-    () => orders.filter((order) => ['pendiente', 'procesando', 'asignado'].includes(normalizeEstado(order.estado))),
-    [orders],
-  );
-
-  const kpis: KpiCardProps[] = [
-    {
-      title: 'Ventas de Hoy',
-      value: formatCurrency(totalSales),
-      subtext: `${validOrders.length} pedidos contabilizados`,
-      icon: DollarSign,
-      color: 'text-green-600 bg-green-50',
-    },
-    {
-      title: 'Pedidos de Hoy',
-      value: validOrders.length.toString(),
-      subtext: `${pendingOrders.length} pendientes de asignar`,
-      icon: ShoppingCart,
-      color: 'text-[#F40009] bg-red-50',
-    },
-    {
-      title: 'Devoluciones',
-      value: refunds.length.toString(),
-      subtext: refundAmount > 0 ? `(${formatCurrency(refundAmount)})` : 'Sin monto devuelto',
-      icon: RotateCw,
-      color: 'text-blue-600 bg-blue-50',
-    },
-  ];
-
-  const handleCancelOrder = async (id_pedido: number) => {
-    try {
-      setCancellingId(id_pedido);
-      await cancelOrder(id_pedido);
-      await fetchDashboardData(selectedDate);
-    } catch (err) {
-      console.error(err);
-      setError('No se pudo anular el pedido.');
-    } finally {
-      setCancellingId(null);
     }
-  };
 
-  return (
-    <div className="min-h-screen bg-gray-50 pt-8 pb-16">
-      <div className="max-w-7xl mx-auto px-4">
-        <div className="flex flex-col lg:flex-row gap-6">
-          <aside className="hidden lg:block lg:w-64">
-            <AdminSidebar />
-          </aside>
+    return {
+        discountPerUnit: Number(selected.amount.toFixed(2)),
+        discountId: selected.discount?.id_descuento,
+        discountLabel: selected.discount?.nombre,
+    };
+};
 
-          <main className="flex-1">
-            <div className="flex justify-between items-center mb-6">
-              <h1 className="text-3xl font-extrabold text-red-600">  Panel de Control: Resumen del Día</h1>
-              
+const SaleModal: React.FC<{
+    isOpen: boolean;
+    onClose: () => void;
+    onCompleted: () => void;
+    currentUserId?: number;
+}> = ({ isOpen, onClose, onCompleted, currentUserId }) => {
+    const [products, setProducts] = useState<ProductModel[]>([]);
+    const [discounts, setDiscounts] = useState<DiscountModel[]>([]);
+    const [assignments, setAssignments] = useState<Array<{ id_producto: number; id_categoria: number }>>([]);
+    const [items, setItems] = useState<SaleItemState[]>([]);
+    const [query, setQuery] = useState('');
+    const [paymentMethod, setPaymentMethod] = useState('efectivo');
+    const [coupon, setCoupon] = useState<DiscountModel | null>(null);
+    const [couponInput, setCouponInput] = useState('');
+    const [couponError, setCouponError] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [saving, setSaving] = useState(false);
 
-              <div className="flex items-center gap-3">
-                {loading && <Loader2 className="animate-spin text-gray-500" />}
-                <input
-                  type="date"
-                  value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                  className="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-red-500 focus:border-red-500 block p-2.5 shadow-sm"
-                />
-              </div>
+    useEffect(() => {
+        if (!isOpen) return;
+        const load = async () => {
+            setLoading(true);
+            try {
+                const [productData, discountData, categoryData] = await Promise.all([
+                    fetchProductsForSale(),
+                    fetchDiscounts(),
+                    fetchProductCategories(),
+                ]);
+                setProducts(productData);
+                setDiscounts(discountData);
+                setAssignments(categoryData);
+            } finally {
+                setLoading(false);
+            }
+        };
+        load();
+    }, [isOpen]);
+
+    const filteredProducts = useMemo(() => {
+        return products.filter((p) =>
+            `${p.nombre} ${p.id_producto}`.toLowerCase().includes(query.toLowerCase())
+        );
+    }, [products, query]);
+
+    const handleAddProduct = (product: ProductModel) => {
+        const already = items.find((i) => i.product.id_producto === product.id_producto);
+        if (already) return;
+        const discountData = calculateProductDiscount(product, discounts, assignments);
+        setItems((prev) => [
+            ...prev,
+            {
+                product,
+                quantity: 1,
+                unitPrice: product.precio_venta,
+                discountPerUnit: discountData.discountPerUnit,
+                discountLabel: discountData.discountLabel,
+                discountId: discountData.discountId,
+            },
+        ]);
+    };
+
+    const updateQuantity = (id_producto: number, quantity: number) => {
+        setItems((prev) => prev.map((i) => (i.product.id_producto === id_producto ? { ...i, quantity } : i)));
+    };
+
+    const removeItem = (id_producto: number) => {
+        setItems((prev) => prev.filter((i) => i.product.id_producto !== id_producto));
+    };
+
+    const subtotal = useMemo(
+        () => items.reduce((sum, i) => sum + i.unitPrice * i.quantity, 0),
+        [items],
+    );
+
+    const discountFromItems = useMemo(
+        () => items.reduce((sum, i) => sum + i.discountPerUnit * i.quantity, 0),
+        [items],
+    );
+
+    const couponDiscount = useMemo(() => {
+        if (!coupon) return 0;
+        const base = subtotal - discountFromItems;
+        if (coupon.porcentaje_descuento) return (base * coupon.porcentaje_descuento) / 100;
+        if (coupon.monto_fijo) return coupon.monto_fijo;
+        return 0;
+    }, [coupon, subtotal, discountFromItems]);
+
+    const total = Math.max(subtotal - discountFromItems - couponDiscount, 0);
+
+    const applyCoupon = async () => {
+        try {
+            setCouponError('');
+            const data = await validateCouponCode(couponInput.trim());
+            setCoupon(data);
+        } catch (error: any) {
+            const msg = error?.response?.data?.message ?? 'Cupón inválido';
+            setCoupon(null);
+            setCouponError(msg);
+        }
+    };
+
+    const handleFinalize = async () => {
+        if (!items.length) return;
+        setSaving(true);
+        try {
+            await createSale({
+                id_usuario_cliente: currentUserId ?? 1,
+                tipo_pedido: 'presencial',
+                metodo_pago: paymentMethod,
+                direccion_entrega: 'Venta en tienda',
+                tipo_entrega: 'tienda',
+                es_reserva: false,
+                id_descuento_aplicado: coupon?.id_descuento ?? items.find((i) => i.discountId)?.discountId,
+                subtotal_override: Number((subtotal - discountFromItems).toFixed(2)),
+                total_override: Number(total.toFixed(2)),
+                items: items.map((i) => ({
+                    id_producto: i.product.id_producto,
+                    cantidad: i.quantity,
+                    precio_unitario: Number((i.unitPrice - i.discountPerUnit).toFixed(2)),
+                })),
+            });
+            onCompleted();
+            onClose();
+            setItems([]);
+            setCoupon(null);
+            setCouponInput('');
+        } catch (error: any) {
+            alert(error?.response?.data?.message ?? 'No se pudo registrar la venta');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    return (
+        <Modal isOpen={isOpen} onClose={onClose} title="Registrar Venta Presencial">
+            {loading ? (
+                <p className="text-center text-gray-500">Cargando productos...</p>
+            ) : (
+                <div className="space-y-4">
+                    <div className="flex items-center gap-2">
+                        <div className="relative w-full">
+                            <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                            <input
+                                className="w-full border rounded-lg pl-9 pr-3 py-2 text-sm"
+                                placeholder="Buscar por nombre o ID"
+                                value={query}
+                                onChange={(e) => setQuery(e.target.value)}
+                            />
+                        </div>
+                        <span className="text-xs text-gray-500 whitespace-nowrap">{filteredProducts.length} productos</span>
+                    </div>
+
+                    <div className="max-h-40 overflow-y-auto border rounded-lg p-2">
+                        {filteredProducts.map((product) => (
+                            <button
+                                key={product.id_producto}
+                                onClick={() => handleAddProduct(product)}
+                                className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left hover:bg-gray-50"
+                            >
+                                <div>
+                                    <p className="text-sm font-semibold">{product.nombre}</p>
+                                    
+                                    <p className="text-xs text-gray-500">
+                                    Bs. {Number(product.precio_venta ?? 0).toFixed(2)}
+                                    </p>
+                                </div>
+                                <span className="text-xs text-red-600 font-semibold">Agregar</span>
+                            </button>
+                        ))}
+                        {!filteredProducts.length && (
+                            <p className="text-center text-xs text-gray-400 py-3">Sin resultados</p>
+                        )}
+                    </div>
+
+                    <div className="space-y-2">
+                        {items.map((item) => (
+                            <div
+                                key={item.product.id_producto}
+                                className="flex items-center justify-between rounded-lg border px-3 py-2 text-sm"
+                            >
+                                <div>
+                                    <p className="font-semibold">{item.product.nombre}</p>
+                                    
+                                    <p className="text-xs text-gray-500">
+                                    Bs. {Number(item.unitPrice ?? 0).toFixed(2)}
+                                    </p>
+                                    {item.discountPerUnit > 0 && (
+                                        <p className="text-xs text-green-600">Descuento: -Bs. {item.discountPerUnit.toFixed(2)} ({item.discountLabel})</p>
+                                    )}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <input
+                                        type="number"
+                                        min={1}
+                                        value={item.quantity}
+                                        onChange={(e) => updateQuantity(item.product.id_producto, Math.max(1, Number(e.target.value)))}
+                                        className="w-16 rounded border px-2 py-1 text-sm"
+                                    />
+                                    <span className="font-semibold">Bs. {((item.unitPrice - item.discountPerUnit) * item.quantity).toFixed(2)}</span>
+                                    <button onClick={() => removeItem(item.product.id_producto)} className="text-gray-400 hover:text-red-600">
+                                        <Trash2 size={16} />
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                        {!items.length && <p className="text-xs text-gray-400 text-center">No hay productos en la venta</p>}
+                    </div>
+
+                    <div className="space-y-3 rounded-lg bg-gray-50 p-3 text-sm">
+                        <div className="flex items-center justify-between">
+                            <span>Subtotal</span>
+                            <span className="font-semibold">Bs. {subtotal.toFixed(2)}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-green-700">
+                            <span>Descuentos</span>
+                            
+                            <span className="font-semibold">
+                                - Bs. {(
+                                    Number(discountFromItems ?? 0) +
+                                    Number(couponDiscount ?? 0)
+                                ).toFixed(2)}
+                            </span>
+                        </div>
+                        <div className="flex items-center justify-between text-lg font-bold">
+                            <span>Total a pagar</span>
+                            <span>Bs. {total.toFixed(2)}</span>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-3 text-sm">
+                        <label className="space-y-1">
+                            <span className="text-gray-700">Método de pago</span>
+                            <select
+                                className="w-full rounded-lg border px-3 py-2"
+                                value={paymentMethod}
+                                onChange={(e) => setPaymentMethod(e.target.value)}
+                            >
+                                <option value="efectivo">Efectivo</option>
+                                <option value="tarjeta">Tarjeta</option>
+                                <option value="transferencia">Transferencia</option>
+                            </select>
+                        </label>
+
+                        <label className="space-y-1">
+                            <span className="text-gray-700">Cupón de descuento (opcional)</span>
+                            <div className="flex gap-2">
+                                <input
+                                    className="w-full rounded-lg border px-3 py-2"
+                                    placeholder="Código de cupón"
+                                    value={couponInput}
+                                    onChange={(e) => setCouponInput(e.target.value)}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={applyCoupon}
+                                    className="rounded-lg bg-gray-200 px-4 py-2 font-semibold text-gray-800 hover:bg-gray-300"
+                                >
+                                    Validar
+                                </button>
+                            </div>
+                            {coupon && <p className="text-xs text-green-700">Cupón aplicado: {coupon.nombre}</p>}
+                            {couponError && <p className="text-xs text-red-600">{couponError}</p>}
+                        </label>
+                    </div>
+
+                    <button
+                        onClick={handleFinalize}
+                        disabled={saving || !items.length}
+                        className="w-full rounded-lg bg-[#F40009] px-4 py-3 text-white font-semibold hover:bg-red-700 disabled:opacity-60"
+                    >
+                        {saving ? 'Guardando...' : 'Finalizar Venta'}
+                    </button>
+                </div>
+            )}
+        </Modal>
+    );
+};
+
+const RefundModal: React.FC<{
+    isOpen: boolean;
+    onClose: () => void;
+    onCompleted: () => void;
+    currentUserId?: number;
+}> = ({ isOpen, onClose, onCompleted, currentUserId }) => {
+    const [searchId, setSearchId] = useState('');
+    const [order, setOrder] = useState<any>(null);
+    const [selectedProduct, setSelectedProduct] = useState<number | null>(null);
+    const [quantity, setQuantity] = useState(1);
+    const [reason, setReason] = useState('producto defectuoso');
+    const [reingresar, setReingresar] = useState(true);
+    const [loading, setLoading] = useState(false);
+    const [saving, setSaving] = useState(false);
+
+    useEffect(() => {
+        if (!isOpen) {
+            setOrder(null);
+            setSelectedProduct(null);
+            setQuantity(1);
+            setSearchId('');
+        }
+    }, [isOpen]);
+
+    const fetchOrder = async () => {
+        if (!searchId) return;
+        setLoading(true);
+        try {
+            const detail = await getOrderDetail(Number(searchId));
+            setOrder(detail);
+            if (detail.items?.length) setSelectedProduct(detail.items[0].id_producto);
+        } catch (error: any) {
+            alert(error?.response?.data?.message ?? 'Pedido no encontrado');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const selectedItem: OrderDetailItem | undefined = useMemo(() => {
+        return order?.items?.find((i: any) => i.id_producto === selectedProduct);
+    }, [order, selectedProduct]);
+
+    const maxQuantity = selectedItem?.cantidad ?? 1;
+    const refundAmount = selectedItem ? Number((selectedItem.precio_unitario * quantity).toFixed(2)) : 0;
+
+    const handleConfirm = async () => {
+        if (!order || !selectedItem) return;
+        if (quantity > maxQuantity) {
+            alert('La cantidad supera lo vendido');
+            return;
+        }
+        setSaving(true);
+        try {
+            const refund = await createRefund({
+                id_pedido: order.id_pedido,
+                id_usuario_vendedor: currentUserId ?? 1,
+                motivo: reason,
+                monto_total: refundAmount,
+            });
+
+            await createRefundItem({
+                id_devolucion: refund.id_devolucion,
+                id_producto: selectedItem.id_producto,
+                cantidad: quantity,
+                precio_unitario: selectedItem.precio_unitario,
+                reingresar_stock: reingresar,
+            });
+
+            onCompleted();
+            onClose();
+        } catch (error: any) {
+            alert(error?.response?.data?.message ?? 'No se pudo registrar la devolución');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    return (
+        <Modal isOpen={isOpen} onClose={onClose} title="Gestionar devolución">
+            <div className="space-y-4 text-sm">
+                <div className="flex gap-2">
+                    <input
+                        className="w-full rounded-lg border px-3 py-2"
+                        placeholder="ID de pedido"
+                        value={searchId}
+                        onChange={(e) => setSearchId(e.target.value)}
+                    />
+                    <button
+                        onClick={fetchOrder}
+                        className="rounded-lg bg-gray-200 px-4 py-2 font-semibold hover:bg-gray-300"
+                    >
+                        Buscar
+                    </button>
+                </div>
+
+                {loading && <p className="text-center text-gray-500">Buscando pedido...</p>}
+
+                {order && (
+                    <div className="space-y-3">
+                        <div className="rounded-lg bg-gray-50 p-3">
+                            <p className="font-semibold">Pedido #{order.id_pedido}</p>
+                            <p className="text-xs text-gray-500">{new Date(order.fecha_creacion).toLocaleString()}</p>
+                        </div>
+
+                        <label className="space-y-1">
+                            <span className="text-gray-700">Producto a devolver</span>
+                            <select
+                                className="w-full rounded-lg border px-3 py-2"
+                                value={selectedProduct ?? ''}
+                                onChange={(e) => setSelectedProduct(Number(e.target.value))}
+                            >
+                                {order.items?.map((item: any) => (
+                                    <option key={item.id_producto} value={item.id_producto}>
+                                        {item.product?.nombre ?? `Producto ${item.id_producto}`} - {item.cantidad} uds.
+                                    </option>
+                                ))}
+                            </select>
+                        </label>
+
+                        <div className="grid grid-cols-2 gap-3">
+                            <label className="space-y-1">
+                                <span className="text-gray-700">Cantidad</span>
+                                <input
+                                    type="number"
+                                    min={1}
+                                    max={maxQuantity}
+                                    value={quantity}
+                                    onChange={(e) => setQuantity(Math.min(maxQuantity, Math.max(1, Number(e.target.value))))}
+                                    className="w-full rounded-lg border px-3 py-2"
+                                />
+                            </label>
+
+                            <label className="space-y-1">
+                                <span className="text-gray-700">Motivo</span>
+                                <select
+                                    className="w-full rounded-lg border px-3 py-2"
+                                    value={reason}
+                                    onChange={(e) => setReason(e.target.value)}
+                                >
+                                    <option value="producto defectuoso">Producto defectuoso</option>
+                                    <option value="inconformidad">Inconformidad del cliente</option>
+                                    <option value="otro">Otro</option>
+                                </select>
+                            </label>
+                        </div>
+
+                        <label className="flex items-center gap-2 text-gray-700">
+                            <input
+                                type="checkbox"
+                                checked={reingresar}
+                                onChange={(e) => setReingresar(e.target.checked)}
+                                className="h-4 w-4"
+                            />
+                            Reingresar producto al stock
+                        </label>
+
+                        <div className="rounded-lg bg-gray-50 p-3">
+                            <div className="flex items-center justify-between">
+                                <span>Monto a reembolsar</span>
+                                <span className="text-lg font-bold">Bs. {refundAmount.toFixed(2)}</span>
+                            </div>
+                        </div>
+
+                        <button
+                            onClick={handleConfirm}
+                            disabled={saving}
+                            className="w-full rounded-lg bg-gray-800 px-4 py-3 text-white font-semibold hover:bg-black disabled:opacity-60"
+                        >
+                            {saving ? 'Guardando...' : 'Confirmar devolución'}
+                        </button>
+                    </div>
+                )}
+
+                {!order && !loading && (
+                    <p className="text-xs text-gray-400 text-center">Busca un pedido para iniciar una devolución</p>
+                )}
+            </div>
+        </Modal>
+    );
+};
+
+export default function AdminVentasPage() {
+
+    const [busqueda, setBusqueda] = React.useState('');
+    const [paginaActual, setPaginaActual] = React.useState(1);
+    const transaccionesPorPagina = 10;
+    const [orders, setOrders] = useState<any[]>([]);
+    const [refunds, setRefunds] = useState<any[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [saleModalOpen, setSaleModalOpen] = useState(false);
+    const [refundModalOpen, setRefundModalOpen] = useState(false);
+    const [currentUserId, setCurrentUserId] = useState<number | undefined>(undefined);
+
+    useEffect(() => {
+        const stored = localStorage.getItem('userData');
+        if (stored) {
+            const parsed = JSON.parse(stored);
+            setCurrentUserId(parsed.id_usuario);
+        }
+    }, []);
+
+    const loadData = async () => {
+        setLoading(true);
+        try {
+            const [ordersData, refundsData] = await Promise.all([getOrders(), getRefunds().catch(() => [])]);
+            setOrders(ordersData ?? []);
+            setRefunds(refundsData ?? []);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        loadData();
+    }, []);
+
+    const transacciones: TransactionRow[] = useMemo(() => {
+        const orderRows: (TransactionRow & { rawDate: Date | null })[] = orders.map((o: any) => {
+            const rawDate = o.fecha_creacion ? new Date(o.fecha_creacion) : null;
+            return {
+                id: `O-${o.id_pedido}`,
+                tipo: o.tipo_pedido?.toLowerCase() === 'presencial' ? 'Venta Presencial' : 'Venta Online',
+                fechaHora: rawDate ? rawDate.toLocaleString() : '',
+                cliente: o.client?.nombre ?? 'Cliente',
+                idPedido: `#${o.id_pedido}`,
+                total: Number(o.total ?? 0),
+                numProductos: o.items?.length ?? 0,
+                rawDate,
+            };
+        });
+
+        const refundRows: (TransactionRow & { rawDate: Date | null })[] = refunds.map((r: any) => {
+            const rawDate = r.fecha ? new Date(r.fecha) : null;
+            return {
+                id: `R-${r.id_devolucion}`,
+                tipo: 'Devolución',
+                fechaHora: rawDate ? rawDate.toLocaleString() : '',
+                cliente: r.order?.client?.nombre ?? 'Cliente',
+                idPedido: `#${r.id_pedido ?? r.order?.id_pedido ?? ''}`,
+                total: Number(r.monto_total ?? 0),
+                numProductos: r.refundItems?.length ?? 1,
+                rawDate,
+            };
+        });
+
+        return [...orderRows, ...refundRows]
+            .sort((a, b) => {
+                const aDate = a.rawDate ? a.rawDate.getTime() : 0;
+                const bDate = b.rawDate ? b.rawDate.getTime() : 0;
+                return bDate - aDate;
+            })
+            .map(({ rawDate, ...rest }) => rest as TransactionRow);
+    }, [orders, refunds]);
+
+    const transaccionesFiltradas = transacciones.filter((t) =>
+        t.id.toLowerCase().includes(busqueda.toLowerCase()) || t.idPedido.toLowerCase().includes(busqueda.toLowerCase()),
+    );
+
+    const totalPaginas = Math.ceil(transaccionesFiltradas.length / transaccionesPorPagina) || 1;
+    const inicio = (paginaActual - 1) * transaccionesPorPagina;
+    const fin = inicio + transaccionesPorPagina;
+    const transaccionesPagina = transaccionesFiltradas.slice(inicio, fin);
+
+    const handleVerDetalle = (id: string) => console.log(`Viendo detalle de la transacción: ${id}`);
+
+    return (
+        <div className="min-h-screen bg-gray-50 pt-8 pb-16">
+
+            <div className="max-w-7xl mx-auto px-4">
+
+                <div className="flex flex-col lg:flex-row gap-6">
+
+                    <aside className="hidden lg:block lg:w-64">
+
+                        <AdminSidebar />
+                    </aside>
+
+                    <main className="flex-1 bg-white rounded-lg shadow-md p-6">
+
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 border-b pb-3 space-y-4 sm:space-y-0">
+                            <h1 className="text-3xl font-extrabold text-gray-900">Registro de Transacciones</h1>
+
+                            <div className="flex space-x-3">
+                                <button
+                                    onClick={() => setSaleModalOpen(true)}
+                                    className="flex items-center bg-[#F40009] text-white font-semibold px-4 py-2 rounded-lg shadow-md hover:bg-red-700 transition duration-150 text-sm whitespace-nowrap"
+                                >
+                                    <PlusCircle size={18} className="mr-1 hidden sm:inline" />
+                                    Registrar Venta Presencial
+                                </button>
+                                <button
+                                    onClick={() => setRefundModalOpen(true)}
+                                    className="flex items-center bg-gray-200 text-gray-800 font-semibold px-4 py-2 rounded-lg shadow-md hover:bg-gray-300 transition duration-150 text-sm whitespace-nowrap"
+                                >
+                                    <RefreshCcw size={18} className="mr-1 hidden sm:inline" />
+                                    Registrar Devolución
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="mb-4">
+                            <input
+                                type="text"
+                                placeholder="Buscar por ID de Transacción o Pedido..."
+                                value={busqueda}
+                                onChange={(e) => {
+                                    setBusqueda(e.target.value);
+                                    setPaginaActual(1);
+                                }}
+                                className="w-full md:w-1/3 px-4 py-2 border border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500 shadow-sm"
+                            />
+                        </div>
+
+                        {loading ? (
+                            <p className="text-center text-gray-500">Cargando transacciones...</p>
+                        ) : (
+                            <div className="overflow-x-auto bg-white rounded-xl border border-gray-100 shadow-sm">
+                                <table className="min-w-full divide-y divide-gray-200">
+                                    <thead className="bg-gray-50">
+                                        <tr>
+                                            <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">ID TRANSACCIÓN</th>
+                                            <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">TIPO</th>
+                                            <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">FECHA/HORA</th>
+                                            <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">CLIENTE</th>
+                                            <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">ID PEDIDO</th>
+                                            <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">TOTAL</th>
+                                            <th className="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">ACCIONES</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="bg-white divide-y divide-gray-200">
+                                        {transaccionesPagina.map((t, index) => (
+                                            <tr key={index} className="hover:bg-red-50 transition duration-150">
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{t.id}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <span className={`inline-block px-3 py-1 text-xs font-semibold rounded-full ${
+                                                        t.tipo === 'Venta Online'
+                                                            ? 'bg-green-100 text-green-700'
+                                                            : t.tipo === 'Venta Presencial'
+                                                                ? 'bg-blue-100 text-blue-700'
+                                                                : 'bg-red-100 text-red-700'
+                                                    }`}>
+                                                        {t.tipo}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{t.fechaHora}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{t.cliente}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{t.idPedido}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                                                    Bs. {t.total.toFixed(2)} ({t.numProductos} Productos)
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                                                    <button
+                                                        onClick={() => handleVerDetalle(t.id)}
+                                                        className="text-red-500 hover:text-red-700 transition duration-150 whitespace-nowrap"
+                                                    >
+                                                        Ver Detalle
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+
+                        <div className="mt-6 flex justify-center items-center text-sm">
+                            <nav className="flex items-center space-x-1">
+                                <button
+                                    onClick={() => setPaginaActual((p) => Math.max(1, p - 1))}
+                                    disabled={paginaActual === 1}
+                                    className="p-2 border border-gray-300 rounded-full text-gray-500 hover:bg-gray-100 disabled:opacity-50"
+                                >
+                                    &lt;
+                                </button>
+
+                                <span className="px-4 py-2 font-semibold bg-[#F40009] text-white rounded-full">
+                                    Página {paginaActual} de {totalPaginas}
+                                </span>
+
+                                <button
+                                    onClick={() => setPaginaActual((p) => Math.min(totalPaginas, p + 1))}
+                                    disabled={paginaActual === totalPaginas}
+                                    className="p-2 border border-gray-300 rounded-full text-gray-500 hover:bg-gray-100 disabled:opacity-50"
+                                >
+                                    &gt;
+                                </button>
+                            </nav>
+                        </div>
+                    </main>
+                </div>
             </div>
 
-            {error && (
-              <div className="mb-4 flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                <AlertTriangle size={16} />
-                {error}
-              </div>
-            )}
-
-            {/* 1. Tarjetas de Indicadores Clave (KPIs) */}
-            <section className="mb-8">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {kpis.map((kpi) => (
-                  <KpiCard key={kpi.title} {...kpi} />
-                ))}
-              </div>
-            </section>
-
-            {/* 2. Gráficos de Análisis */}
-            <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2 bg-white rounded-xl shadow-lg p-6 border border-gray-100">
-                <h2 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Ventas Por Hora</h2>
-                <div className="h-96">
-                  <SalesLineChart data={hourlySales} />
-                </div>
-              </div>
-
-              <div className="lg:col-span-1 bg-white rounded-xl shadow-lg p-6 border border-gray-100">
-                <h2 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Productos Más Vendidos</h2>
-                <div className="h-96 flex items-end justify-center pt-10">
-                  <TopProductsBarChart data={topProducts} />
-                </div>
-              </div>
-            </section>
-
-            {/* 3. Alertas y Pedidos Pendientes */}
-            <section className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-              <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
-                <h2 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Alertas de Stock Mínimo</h2>
-                <div className="space-y-4">
-                  {stockAlerts.length === 0 && <p className="text-sm text-gray-500">No hay alertas por ahora.</p>}
-                  {stockAlerts.map((alert) => (
-                    <div key={alert.id_producto} className="border-l-4 border-yellow-500 pl-3">
-                      <p className="font-semibold text-gray-900">{alert.product?.nombre || `Producto ${alert.id_producto}`}</p>
-                      <p className="text-sm text-gray-600">
-                        Quedan {alert.stock_disponible}/{alert.stock_minimo} -{' '}
-                        <span className="text-xs text-yellow-600">Reabastecer</span>
-                      </p>
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-4 text-right">
-                  <Link href="/administrador/inventario" className="text-sm text-[#F40009] hover:underline font-medium">
-                    Ver Inventario Completo
-                  </Link>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
-                <h2 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Últimos Pedidos (Pendientes)</h2>
-                <ul className="space-y-4">
-                  {pendingOrders.length === 0 && <li className="text-sm text-gray-500">No hay pedidos pendientes.</li>}
-                  {pendingOrders.slice(0, 5).map((order) => (
-                    <li key={order.id_pedido} className="flex justify-between items-center text-sm border-b pb-2">
-                      <span>
-                        (#
-                        {order.id_pedido}) {formatCurrency(Number(order.total || 0))}
-                      </span>
-                      <div className="space-x-2 text-right">
-                        <Link
-                          href={`/administrador/pedidos?pedido=${order.id_pedido}`}
-                          className="text-blue-500 hover:underline font-medium"
-                        >
-                          Asignar Repartidor
-                        </Link>
-                        <Link href={`/administrador/pedidos?pedido=${order.id_pedido}`} className="text-gray-500 hover:underline">
-                          Ver Detalle
-                        </Link>
-                        <button
-                          onClick={() => handleCancelOrder(order.id_pedido)}
-                          className="text-red-500 hover:underline disabled:text-gray-400"
-                          disabled={cancellingId === order.id_pedido}
-                          title="Anular Pedido"
-                        >
-                          {cancellingId === order.id_pedido ? 'Anulando...' : 'Anular Pedido'}
-                        </button>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-                <div className="mt-4 text-right">
-                  <Link href="/administrador/pedidos" className="text-sm text-[#F40009] hover:underline font-medium">
-                    Ver todos los Pedidos
-                  </Link>
-                </div>
-              </div>
-            </section>
-          </main>
+            <SaleModal isOpen={saleModalOpen} onClose={() => setSaleModalOpen(false)} onCompleted={loadData} currentUserId={currentUserId} />
+            <RefundModal isOpen={refundModalOpen} onClose={() => setRefundModalOpen(false)} onCompleted={loadData} currentUserId={currentUserId} />
         </div>
-      </div>
-    </div>
-  );
+    );
 }
