@@ -70,6 +70,7 @@ const formatCurrency = (value: number) =>
 
 const todayStr = new Date().toISOString().slice(0, 10);
 
+// CAMBIO VISUAL: Textos oscuros en las tarjetas
 const StatCard = ({
   title,
   value,
@@ -88,9 +89,11 @@ const StatCard = ({
       <Icon className="w-5 h-5" />
     </div>
     <div>
-      <p className="text-sm text-gray-500">{title}</p>
-      <p className="text-xl font-semibold text-gray-900">{value}</p>
-      <p className="text-xs text-gray-400">{subtitle}</p>
+      {/* CAMBIO: text-gray-500 a text-gray-900 */}
+      <p className="text-sm font-medium text-gray-900">{title}</p>
+      <p className="text-xl font-bold text-gray-900">{value}</p>
+      {/* CAMBIO: text-gray-400 a text-gray-700 */}
+      <p className="text-xs text-gray-700 font-medium">{subtitle}</p>
     </div>
   </div>
 );
@@ -185,14 +188,14 @@ const DailyReportPage = () => {
         title: "Ventas del día",
         value: formatCurrency(report?.summary?.totalVentas ?? 0),
         subtitle:
-          "Estados contados: " + (report?.summary?.estadosConsiderados?.join(", ") ?? "entregado"),
+          "Estados: " + (report?.summary?.estadosConsiderados?.join(", ") ?? "entregado"),
         icon: ShoppingBag,
         accentClass: "bg-red-50 text-red-700",
       },
       {
         title: "Pedidos",
         value: String(report?.summary?.totalPedidos ?? 0),
-        subtitle: "Pedidos cerrados para la fecha",
+        subtitle: "Pedidos cerrados fecha",
         icon: ClipboardList,
         accentClass: "bg-blue-50 text-blue-700",
       },
@@ -227,9 +230,9 @@ const DailyReportPage = () => {
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div>
-                
-                <h1 className="text-2xl font-semibold text-gray-900">Reporte económico diario</h1>
-                <p className="text-sm text-gray-500">
+                {/* CAMBIO: Titulo negro y subtitulo oscuro */}
+                <h1 className="text-2xl font-bold text-black">Reporte económico diario</h1>
+                <p className="text-sm text-gray-800 font-medium">
                   Selecciona una fecha para ver el resumen y exportar archivos.
                 </p>
               </div>
@@ -240,12 +243,12 @@ const DailyReportPage = () => {
                   value={selectedDate}
                   max={todayStr}
                   onChange={(e) => setSelectedDate(e.target.value)}
-                  className="border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm text-black font-medium"
                 />
                 <select
                   value={estadoFiltro}
                   onChange={(e) => setEstadoFiltro(e.target.value)}
-                  className="border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm text-black font-medium"
                 >
                   <option value="entregado">Solo entregado (ventas reales)</option>
                   <option value="entregado,procesando">Entregado + procesando</option>
@@ -262,7 +265,7 @@ const DailyReportPage = () => {
             </div>
 
             {error && (
-              <div className="mt-4 p-3 rounded-lg bg-red-50 text-sm text-red-700 border border-red-100">
+              <div className="mt-4 p-3 rounded-lg bg-red-50 text-sm text-red-700 border border-red-100 font-medium">
                 {error}
               </div>
             )}
@@ -294,16 +297,18 @@ const DailyReportPage = () => {
             {/* ====== TABLAS ====== */}
             <div className="mt-6 grid grid-cols-1 xl:grid-cols-2 gap-6">
               {/* PEDIDOS */}
-              <div className="bg-white border border-gray-100 rounded-xl shadow-sm p-4">
+              <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-4">
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-lg font-semibold text-gray-900">Pedidos del día</h3>
-                  <span className="text-sm text-gray-500">{report?.orders?.length ?? 0} registros</span>
+                  <h3 className="text-lg font-bold text-black">Pedidos del día</h3>
+                  {/* CAMBIO: Texto oscuro */}
+                  <span className="text-sm text-gray-800 font-medium">{report?.orders?.length ?? 0} registros</span>
                 </div>
 
                 <div className="overflow-x-auto">
                   <table className="min-w-full text-sm table-fixed">
                     <thead>
-                      <tr className="text-left text-gray-500 border-b border-gray-100">
+                      {/* CAMBIO: Encabezados NEGROS */}
+                      <tr className="text-left text-gray-900 font-bold border-b border-gray-200">
                         <th className="py-2 px-3 w-[70px] whitespace-nowrap">ID</th>
                         <th className="py-2 px-3 w-[90px] whitespace-nowrap">Hora</th>
                         <th className="py-2 px-3 w-[200px]">Cliente</th>
@@ -314,7 +319,7 @@ const DailyReportPage = () => {
                       </tr>
                     </thead>
 
-                    <tbody className="text-gray-800">
+                    <tbody className="text-gray-900 font-medium">
                       {(report?.orders ?? []).map((order) => {
                         const hora = order.fecha_creacion
                           ? new Date(order.fecha_creacion).toLocaleTimeString("es-BO", {
@@ -324,23 +329,22 @@ const DailyReportPage = () => {
                           : "";
 
                         return (
-                          <tr key={order.id_pedido} className="border-t border-gray-100 align-middle">
-                            <td className="py-2 px-3 whitespace-nowrap font-medium">#{order.id_pedido}</td>
-                            <td className="py-2 px-3 whitespace-nowrap text-gray-700">{hora}</td>
+                          <tr key={order.id_pedido} className="border-t border-gray-100 align-middle hover:bg-gray-50">
+                            <td className="py-2 px-3 whitespace-nowrap font-bold">#{order.id_pedido}</td>
+                            <td className="py-2 px-3 whitespace-nowrap text-gray-800">{hora}</td>
 
-                            {/* Cliente: permite truncar para no romper todo */}
+                            {/* Cliente */}
                             <td className="py-2 px-3">
-                              <div className="max-w-[200px] truncate" title={order.cliente ?? "Sin cliente"}>
+                              <div className="max-w-[200px] truncate text-gray-900" title={order.cliente ?? "Sin cliente"}>
                                 {order.cliente ?? "Sin cliente"}
                               </div>
                             </td>
 
-                            {/* Estado / Entrega / Pago: no-wrap para que no se junten raro */}
-                            <td className="py-2 px-3 whitespace-nowrap">{order.estado}</td>
-                            <td className="py-2 px-3 whitespace-nowrap">{order.tipo_entrega}</td>
-                            <td className="py-2 px-3 whitespace-nowrap">{order.metodo_pago}</td>
+                            <td className="py-2 px-3 whitespace-nowrap text-gray-800">{order.estado}</td>
+                            <td className="py-2 px-3 whitespace-nowrap text-gray-800">{order.tipo_entrega}</td>
+                            <td className="py-2 px-3 whitespace-nowrap text-gray-800">{order.metodo_pago}</td>
 
-                            <td className="py-2 px-3 whitespace-nowrap text-right">
+                            <td className="py-2 px-3 whitespace-nowrap text-right font-bold text-gray-900">
                               {formatCurrency(order.total)}
                             </td>
                           </tr>
@@ -349,7 +353,8 @@ const DailyReportPage = () => {
 
                       {!report?.orders?.length && (
                         <tr>
-                          <td className="py-3 px-3 text-center text-gray-500" colSpan={7}>
+                          {/* CAMBIO: Texto oscuro */}
+                          <td className="py-3 px-3 text-center text-gray-700 font-medium" colSpan={7}>
                             No hay pedidos para la fecha seleccionada.
                           </td>
                         </tr>
@@ -362,34 +367,36 @@ const DailyReportPage = () => {
               </div>
 
               {/* TOP PRODUCTOS */}
-              <div className="bg-white border border-gray-100 rounded-xl shadow-sm p-4">
+              <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-4">
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-lg font-semibold text-gray-900">Top productos</h3>
-                  <span className="text-sm text-gray-500">{report?.topProducts?.length ?? 0} ítems</span>
+                  <h3 className="text-lg font-bold text-black">Top productos</h3>
+                  {/* CAMBIO: Texto oscuro */}
+                  <span className="text-sm text-gray-800 font-medium">{report?.topProducts?.length ?? 0} ítems</span>
                 </div>
 
                 <div className="overflow-x-auto">
                   <table className="min-w-full text-sm">
                     <thead>
-                      <tr className="text-left text-gray-500 border-b border-gray-100">
+                      {/* CAMBIO: Encabezados NEGROS */}
+                      <tr className="text-left text-gray-900 font-bold border-b border-gray-200">
                         <th className="py-2 px-3">Producto</th>
                         <th className="py-2 px-3 whitespace-nowrap">Unidades</th>
                         <th className="py-2 px-3 whitespace-nowrap text-right">Revenue</th>
                       </tr>
                     </thead>
-                    <tbody>
+                    <tbody className="text-gray-900">
                       {(report?.topProducts ?? []).map((item) => (
-                        <tr key={item.id_producto} className="border-t border-gray-100">
-                          <td className="py-2 px-3">{item.nombre}</td>
-                          <td className="py-2 px-3 whitespace-nowrap">{item.unidades}</td>
-                          <td className="py-2 px-3 whitespace-nowrap text-right">
+                        <tr key={item.id_producto} className="border-t border-gray-100 hover:bg-gray-50">
+                          <td className="py-2 px-3 font-medium">{item.nombre}</td>
+                          <td className="py-2 px-3 whitespace-nowrap font-medium">{item.unidades}</td>
+                          <td className="py-2 px-3 whitespace-nowrap text-right font-bold">
                             {formatCurrency(item.revenue)}
                           </td>
                         </tr>
                       ))}
                       {!report?.topProducts?.length && (
                         <tr>
-                          <td className="py-3 px-3 text-center text-gray-500" colSpan={3}>
+                          <td className="py-3 px-3 text-center text-gray-700 font-medium" colSpan={3}>
                             No hay productos vendidos en la fecha.
                           </td>
                         </tr>
@@ -402,31 +409,32 @@ const DailyReportPage = () => {
 
             {/* INVENTARIO + ALERTAS */}
             <div className="mt-6 grid grid-cols-1 xl:grid-cols-2 gap-6">
-              <div className="bg-white border border-gray-100 rounded-xl shadow-sm p-4">
+              <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-4">
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-lg font-semibold text-gray-900">Inventario (snapshot actual)</h3>
-                  <span className="text-sm text-gray-500">{report?.inventorySnapshot?.length ?? 0} productos</span>
+                  <h3 className="text-lg font-bold text-black">Inventario (snapshot actual)</h3>
+                  <span className="text-sm text-gray-800 font-medium">{report?.inventorySnapshot?.length ?? 0} productos</span>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="min-w-full text-sm">
                     <thead>
-                      <tr className="text-left text-gray-500 border-b border-gray-100">
+                      {/* CAMBIO: Encabezados NEGROS */}
+                      <tr className="text-left text-gray-900 font-bold border-b border-gray-200">
                         <th className="py-2 px-3">Producto</th>
                         <th className="py-2 px-3 whitespace-nowrap">Stock</th>
                         <th className="py-2 px-3 whitespace-nowrap">Mínimo</th>
                         <th className="py-2 px-3 whitespace-nowrap">Estado</th>
                       </tr>
                     </thead>
-                    <tbody>
+                    <tbody className="text-gray-900">
                       {(report?.inventorySnapshot ?? []).map((item) => (
-                        <tr key={item.id_producto} className="border-t border-gray-100">
-                          <td className="py-2 px-3">{item.producto}</td>
-                          <td className="py-2 px-3 whitespace-nowrap">{item.stock}</td>
+                        <tr key={item.id_producto} className="border-t border-gray-100 hover:bg-gray-50">
+                          <td className="py-2 px-3 font-medium">{item.producto}</td>
+                          <td className="py-2 px-3 whitespace-nowrap font-medium">{item.stock}</td>
                           <td className="py-2 px-3 whitespace-nowrap">{item.stock_minimo}</td>
                           <td className="py-2 px-3 whitespace-nowrap">
                             <span
-                              className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                item.estado === "BAJO" ? "bg-red-50 text-red-700" : "bg-green-50 text-green-700"
+                              className={`px-2 py-1 rounded-full text-xs font-bold ${
+                                item.estado === "BAJO" ? "bg-red-100 text-red-800" : "bg-green-100 text-green-800"
                               }`}
                             >
                               {item.estado}
@@ -436,7 +444,7 @@ const DailyReportPage = () => {
                       ))}
                       {!report?.inventorySnapshot?.length && (
                         <tr>
-                          <td className="py-3 px-3 text-center text-gray-500" colSpan={4}>
+                          <td className="py-3 px-3 text-center text-gray-700 font-medium" colSpan={4}>
                             No hay inventario registrado.
                           </td>
                         </tr>
@@ -446,35 +454,36 @@ const DailyReportPage = () => {
                 </div>
               </div>
 
-              <div className="bg-white border border-gray-100 rounded-xl shadow-sm p-4">
+              <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-4">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <AlertTriangle className="w-4 h-4 text-amber-600" />
-                    <h3 className="text-lg font-semibold text-gray-900">Alertas stock mínimo</h3>
+                    <h3 className="text-lg font-bold text-black">Alertas stock mínimo</h3>
                   </div>
-                  <span className="text-sm text-gray-500">{currentLowStock.length} alertas</span>
+                  <span className="text-sm text-gray-800 font-medium">{currentLowStock.length} alertas</span>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="min-w-full text-sm">
                     <thead>
-                      <tr className="text-left text-gray-500 border-b border-gray-100">
+                      {/* CAMBIO: Encabezados NEGROS */}
+                      <tr className="text-left text-gray-900 font-bold border-b border-gray-200">
                         <th className="py-2 px-3">Producto</th>
                         <th className="py-2 px-3 whitespace-nowrap">Stock</th>
                         <th className="py-2 px-3 whitespace-nowrap">Mínimo</th>
                       </tr>
                     </thead>
-                    <tbody>
+                    <tbody className="text-gray-900">
                       {currentLowStock.map((item) => (
-                        <tr key={item.id_producto} className="border-t border-gray-100">
-                          <td className="py-2 px-3">{item.producto}</td>
-                          <td className="py-2 px-3 whitespace-nowrap">{item.stock}</td>
+                        <tr key={item.id_producto} className="border-t border-gray-100 hover:bg-gray-50">
+                          <td className="py-2 px-3 font-medium">{item.producto}</td>
+                          <td className="py-2 px-3 whitespace-nowrap font-bold text-red-600">{item.stock}</td>
                           <td className="py-2 px-3 whitespace-nowrap">{item.stock_minimo}</td>
                         </tr>
                       ))}
                       {!currentLowStock.length && (
                         <tr>
-                          <td className="py-3 px-3 text-center text-gray-500" colSpan={3}>
-                            Sin alertas. Se usa el umbral configurado en BD o DEFAULT_MIN_STOCK.
+                          <td className="py-3 px-3 text-center text-gray-700 font-medium" colSpan={3}>
+                            Sin alertas.
                           </td>
                         </tr>
                       )}
