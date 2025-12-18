@@ -1,9 +1,0 @@
-interface UserModel {
-    ci: number;
-    lastname: string;
-    name: string;
-    email: string;
-    password: string;
-}
-  
-export default UserModel;

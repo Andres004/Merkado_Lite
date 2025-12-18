@@ -1,36 +1,88 @@
-import { Body, Controller, Delete, Get, Param, Post, Put } from "@nestjs/common";
-import { User } from "src/entity/user.entity";
-import { UserService } from "./user.service";
+import { Controller, Get, Post, Put, Delete, Patch, Param, Body, Query, ParseIntPipe, UseGuards, Req, UnauthorizedException } from '@nestjs/common';
+import { UserService } from './user.service';
+import { User } from 'src/entity/user.entity';
+import { AuthGuard } from '@nestjs/passport';
+import { RolesGuard } from 'src/auth/roles.guard';
+import { Roles } from 'src/auth/roles.decorator';
+import { Request } from 'express';
 
-
-@Controller('/user')
+@Controller('user')
+@UseGuards(AuthGuard('jwt'), RolesGuard)
 export class UserController {
+  constructor(private readonly userService: UserService) {}
 
-    constructor(private readonly userService: UserService) {}
+  @Get('profile')
+  async getProfile(@Req() req: Request & { user?: any }) {
+    const userId = req.user?.id_usuario;
+    if (!userId) throw new UnauthorizedException('Usuario no autenticado');
+    return this.userService.getProfile(userId);
+  }
 
-    @Post()
-    createUser(@Body() user: User) {
-        return this.userService.createUser(user);
-    }
+  @Post()
+  @Roles('ADMIN')
+  async createUser(@Body() user: any) {
+    return this.userService.createUser(user);
+  }
 
-    @Get()
-    getAllUser() {
-        return this.userService.getAllUsers();
-    }
+  @Patch('/:id_usuario/set-principal')
+  @Roles('ADMIN')
+  async setPrincipalAdmin(
+    @Param('id_usuario', ParseIntPipe) id_usuario: number,
+    @Body() body: { status: boolean }
+  ) {
+    return this.userService.setPrincipalAdmin(id_usuario, body.status);
+  }
 
-    @Get('/:ci') 
-    getUserByCi(@Param() params: any) {
-        return this.userService.getUserByCi(params.ci);
-    }
+  @Get()
+  @Roles('ADMIN', 'Ventas')
+  async getAllUsers(
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10,
+    @Query('search') search?: string,
+  ) {
+    return this.userService.getAllUsers(Number(page), Number(limit), search);
+  }
 
-    @Delete('/:ci')
-    deleteUser(@Param() params: any) {
-        return this.userService.deleteUser(params.ci);
-    }
+  @Get('/:id_usuario')
+  async getUserById(@Param('id_usuario') id_usuario: string) {
+    return this.userService.getUserById(Number(id_usuario));
+  }
 
-    @Put('/:ci')
-    updateUser(@Param() params: any,  @Body() user: User) {
-        return this.userService.updateUser(params.ci, user);
-    }
+  @Put('/:id_usuario')
+  @Roles('ADMIN')
+  async updateUser(@Param('id_usuario') id_usuario: string, @Body() userUpdate: Partial<User> & { id_rol?: number }) {
+    return this.userService.updateUser(Number(id_usuario), userUpdate);
+  }
 
+  @Patch('profile')
+  async updateProfile(@Req() req: Request & { user?: any }, @Body() userUpdate: Partial<User>) {
+    const userId = req.user?.id_usuario;
+    if (!userId) throw new UnauthorizedException('Usuario no autenticado');
+    return this.userService.updateProfile(userId, userUpdate);
+  }
+
+
+  @Patch('/:id_usuario/status')
+  @Roles('ADMIN')
+  async updateStatus(
+    @Param('id_usuario', ParseIntPipe) id_usuario: number,
+    @Body() body: { estado_cuenta: string },
+  ) {
+    return this.userService.updateStatus(id_usuario, body.estado_cuenta);
+  }
+
+  @Delete('/:id_usuario')
+  @Roles('ADMIN')
+  async deleteUser(@Param('id_usuario') id_usuario: string) {
+    return this.userService.deleteUser(Number(id_usuario));
+  }
+
+  @Patch('change-password')
+  async changePassword(
+    @Req() req: Request & { user?: any },
+    @Body() body: { currentPassword: string; newPassword: string },
+  ) {
+    const userId = req.user?.id_usuario;
+    return this.userService.changePassword(userId, body.currentPassword, body.newPassword);
+  }
 }
