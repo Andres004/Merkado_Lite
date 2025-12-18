@@ -20,7 +20,7 @@ export class SeedService implements OnModuleInit {
     if (!AppDataSource.isInitialized) {
       await AppDataSource.initialize();
     }
-    await this.seedDatabase();
+    //await this.seedDatabase();
   }
 
   async seedDatabase() {
