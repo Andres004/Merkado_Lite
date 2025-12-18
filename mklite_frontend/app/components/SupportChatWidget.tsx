@@ -153,14 +153,14 @@ const SupportChatWidget = () => {
       </button>
 
       {isOpen && (
-        <div className="fixed bottom-24 right-6 z-40 w-80 sm:w-96 bg-white rounded-xl shadow-2xl border border-gray-100 flex flex-col overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-100">
+        <div className="fixed bottom-24 right-6 z-40 w-80 sm:w-96 bg-white rounded-xl shadow-2xl border border-gray-200 flex flex-col overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-200">
             <div className="flex items-center gap-2">
               <Headset className="text-[#F40009]" size={20} />
               <div>
-                <p className="text-sm font-semibold text-gray-800">Soporte</p>
-                <p className="text-xs text-green-600 flex items-center gap-1">
-                  <span className="inline-flex h-2 w-2 rounded-full bg-green-500" />
+                <p className="text-sm font-bold text-black">Soporte</p>
+                <p className="text-xs text-green-700 font-medium flex items-center gap-1">
+                  <span className="inline-flex h-2 w-2 rounded-full bg-green-500 animate-pulse" />
                   {statusLabel}
                 </p>
               </div>
@@ -168,16 +168,16 @@ const SupportChatWidget = () => {
             <button
               aria-label="Cerrar chat"
               onClick={() => setIsOpen(false)}
-              className="text-gray-500 hover:text-gray-700"
+              className="text-gray-500 hover:text-black transition-colors"
             >
-              <X size={18} />
+              <X size={20} />
             </button>
           </div>
 
           <div className="flex-1 bg-white px-3 py-4 space-y-3 overflow-y-auto" style={{ maxHeight: '320px' }}>
             {isLoading ? (
-              <div className="flex items-center justify-center text-gray-500 text-sm gap-2">
-                <Loader2 className="animate-spin" size={16} /> Conectando con soporte...
+              <div className="flex items-center justify-center text-gray-600 text-sm gap-2 mt-10">
+                <Loader2 className="animate-spin text-[#F40009]" size={18} /> Conectando...
               </div>
             ) : (
               messages.map((msg, index) => (
@@ -189,12 +189,12 @@ const SupportChatWidget = () => {
                     className={`px-3 py-2 rounded-2xl text-sm shadow-sm max-w-[85%] ${
                       msg.sender === 'user'
                         ? 'bg-[#F40009] text-white rounded-br-none'
-                        : 'bg-gray-100 text-gray-800 rounded-bl-none'
+                        : 'bg-gray-100 text-gray-900 border border-gray-200 rounded-bl-none font-medium'
                     }`}
                   >
                     <p>{msg.content}</p>
                     {msg.timestamp && (
-                      <span className="block text-[10px] mt-1 opacity-80">
+                      <span className={`block text-[10px] mt-1 text-right ${msg.sender === 'user' ? 'text-red-100' : 'text-gray-500'}`}>
                         {new Date(msg.timestamp).toLocaleTimeString('es-BO', { hour: '2-digit', minute: '2-digit' })}
                       </span>
                     )}
@@ -205,21 +205,22 @@ const SupportChatWidget = () => {
             <div ref={bottomRef} />
           </div>
 
-          <div className="border-t border-gray-100 p-3 bg-gray-50">
+          <div className="border-t border-gray-200 p-3 bg-gray-50">
             <div className="flex items-center gap-2">
               <input
                 type="text"
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                placeholder={mode === 'api' ? 'Escribe tu mensaje' : 'Modo simulado: escribe tu mensaje'}
-                className="flex-1 text-sm px-3 py-2 border border-gray-200 rounded-full focus:outline-none focus:ring-1 focus:ring-[#F40009]"
+                placeholder={mode === 'api' ? 'Escribe tu mensaje...' : 'Modo simulado...'}
+                // CAMBIO VISUAL AQUÍ: Fondo gris, texto negro, borde visible
+                className="flex-1 text-sm text-black placeholder:text-gray-600 bg-gray-100 px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-[#F40009] focus:bg-white transition-all shadow-inner"
               />
               <button
                 type="button"
                 onClick={handleSend}
                 disabled={isSending || isLoading}
-                className="bg-[#F40009] text-white rounded-full p-2 hover:bg-red-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                className="bg-[#F40009] text-white rounded-full p-2.5 hover:bg-red-700 transition shadow-md disabled:opacity-50 disabled:cursor-not-allowed transform active:scale-95"
               >
                 {isSending ? <Loader2 className="animate-spin" size={18} /> : <Send size={18} />}
               </button>
