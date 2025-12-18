@@ -3,8 +3,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, ShoppingCart, Package, DollarSign, Percent, Users, Settings, MessageCircle } from "lucide-react";
-
+import { LayoutDashboard, ShoppingCart, Package, DollarSign, Percent, Users, Settings, MessageCircle, BarChart3 } from "lucide-react";
 
 const navItems = [
   { name: "Panel de Control", href: "/administrador", icon: LayoutDashboard },
@@ -12,6 +11,7 @@ const navItems = [
   { name: "Inventario", href: "/administrador/inventario", icon: Package },
   { name: "Ventas", href: "/administrador/ventas", icon: DollarSign },
   { name: "Descuentos", href: "/administrador/descuentos", icon: Percent },
+  { name: "Reportes", href: "/administrador/reportes/diario", icon: BarChart3 },
   { name: "Usuarios", href: "/administrador/usuarios", icon: Users },
   { name: "Soporte", href: "/administrador/soporte", icon: MessageCircle },
   { name: "Configuración", href: "/administrador/configuracion", icon: Settings },
