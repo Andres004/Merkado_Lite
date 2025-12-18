@@ -3,14 +3,20 @@ import { join } from 'path';
 
 export const AppDataSource = new DataSource({
     type: "mysql",
-    host: "localhost",
-    port: 3306,
-    username: "merkado_admin",
-    password: "123", 
-    database: "mklite",
+    
+    //URL de Railway
+    url: process.env.DATABASE_URL,
+
+    // Variables de Railway
+    host: process.env.MYSQLHOST || "localhost",
+    port: Number(process.env.MYSQLPORT) || 3306,
+    username: process.env.MYSQLUSER || "merkado_admin",
+    password: process.env.MYSQLPASSWORD || "123",
+    database: process.env.MYSQLDATABASE || "mklite",
+
     synchronize: true,
     logging: true,
     entities: [join(__dirname, '**', '*.entity{.js,.ts}')],
     subscribers: [],
     migrations: [],
-})
+});
