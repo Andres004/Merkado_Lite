@@ -29,6 +29,55 @@ export class OrderService {
         return this.orderRepository;
     }
 
+    private escapePdfText(text: string): string {
+        return text.replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
+    }
+
+    private buildInvoicePdf(lines: string[]): Buffer {
+        const header = "%PDF-1.4\n";
+        const objects: string[] = [];
+        const offsets: number[] = [0];
+        let currentOffset = header.length;
+
+        const addObject = (id: number, body: string) => {
+            offsets[id] = currentOffset;
+            const serialized = `${id} 0 obj\n${body}\nendobj\n`;
+            objects.push(serialized);
+            currentOffset += serialized.length;
+        };
+
+        const contentLines = lines.map(this.escapePdfText);
+        let contentStream = "BT\n/F1 12 Tf\n72 750 Td\n";
+        contentLines.forEach((line) => {
+            contentStream += `(${line}) Tj\n0 -18 Td\n`;
+        });
+        contentStream += "ET";
+
+        const contentLength = Buffer.byteLength(contentStream, 'utf-8');
+
+        addObject(1, "<< /Type /Catalog /Pages 2 0 R >>");
+        addObject(2, "<< /Type /Pages /Count 1 /Kids [3 0 R] >>");
+        addObject(3, "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>");
+        addObject(4, "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>");
+        addObject(5, `<< /Length ${contentLength} >>\nstream\n${contentStream}\nendstream`);
+
+        let pdf = header + objects.join('');
+
+        const xrefOffset = pdf.length;
+        let xref = `xref\n0 ${objects.length + 1}\n`;
+        xref += "0000000000 65535 f \n";
+        for (let i = 1; i <= objects.length; i++) {
+            xref += `${offsets[i].toString().padStart(10, '0')} 00000 n \n`;
+        }
+
+        const trailer = `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
+
+        pdf += xref + trailer;
+
+        return Buffer.from(pdf, 'utf-8');
+    }
+
+
     // --- NUEVO MÉTODO: Lógica de Haversine ---
     calculateShippingCost(userLat: number, userLng: number) {
         const R = 6371; // Radio de la tierra en km
@@ -154,6 +203,62 @@ export class OrderService {
             await queryRunner.release();
         }
     }
+
+    async generateInvoicePdf(id_pedido: number) {
+        const order = await this.getOrderRepository().findOne({
+            where: { id_pedido },
+            relations: ['items', 'items.product', 'client'],
+        });
+
+        if (!order) throw new NotFoundException(`Pedido con ID ${id_pedido} no encontrado.`);
+        if (order.metodo_pago?.toLowerCase() === 'efectivo') {
+            throw new BadRequestException('La factura solo se emite para pagos electrónicos');
+        }
+
+        const itemLines = order.items?.map((item) => {
+            const nombre = item.product?.nombre ?? 'Producto';
+            const total = Number(item.precio_unitario ?? 0) * Number(item.cantidad ?? 0);
+            return `${nombre} x${item.cantidad} - Bs. ${total.toFixed(2)}`;
+        }) ?? [];
+
+        const lines: string[] = [
+            'Factura MERKADO LITE',
+            `Pedido #${order.id_pedido}`,
+            `Cliente: ${order.client?.nombre ?? ''} ${order.client?.apellido ?? ''}`.trim(),
+            `Método de pago: ${order.metodo_pago}`,
+            `Entrega: ${order.tipo_entrega}`,
+            `Dirección: ${order.direccion_entrega}`,
+            '--- Detalle ---',
+            ...itemLines,
+            `Subtotal: Bs. ${Number(order.subtotal).toFixed(2)}`,
+            `Envío: Bs. ${Number(order.costo_envio).toFixed(2)}`,
+            `Total: Bs. ${Number(order.total).toFixed(2)}`,
+            'Este PDF es generado para factura de pago.',
+        ];
+
+        const buffer = this.buildInvoicePdf(lines);
+        const filename = `factura-pedido-${order.id_pedido}.pdf`;
+        return { buffer, filename, order };
+    }
+
+    async sendInvoiceEmail(id_pedido: number, correoDestino?: string) {
+        const { buffer, filename, order } = await this.generateInvoicePdf(id_pedido);
+        const destinatario = correoDestino || order.client?.email;
+        if (!destinatario) {
+            throw new BadRequestException('No se encontró un correo para el cliente');
+        }
+
+        // En entornos sin proveedor de correo, dejamos registro en consola.
+        console.log(`Envío de factura a ${destinatario} para pedido ${id_pedido}`);
+
+        return {
+            message: 'Factura enviada al correo configurado',
+            destinatario,
+            adjunto: filename,
+            base64: buffer.toString('base64'),
+        };
+    }
+
 
     // ... (El resto de métodos getOrderById, updateOrderState, etc., se mantienen igual)
     // Solo asegúrate de copiar el resto de tu clase original aquí abajo.

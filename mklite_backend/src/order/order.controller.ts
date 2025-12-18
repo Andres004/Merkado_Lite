@@ -10,8 +10,10 @@ import {
     UseGuards,
     Req,
     UnauthorizedException,
+    Res,
 } from '@nestjs/common';
 import { Request } from 'express';
+import type { Response } from 'express';
 import { AuthGuard } from '@nestjs/passport';
 import { OrderService } from './order.service';
 
@@ -52,6 +54,11 @@ export class CalculateShippingDto {
     userLat: number;
     userLng: number;
 }
+
+export class InvoiceEmailDto {
+    email?: string;
+}
+
 
 @Controller('order')
 export class OrderController {
@@ -113,5 +120,24 @@ export class OrderController {
     @Patch('/:id_pedido/cancel')
     async cancelOrder(@Param('id_pedido', ParseIntPipe) id_pedido: number) {
         return this.orderService.cancelOrder(id_pedido);
+    }
+
+    @Get('/:id_pedido/invoice')
+    async downloadInvoice(
+        @Param('id_pedido', ParseIntPipe) id_pedido: number,
+        @Res() res: Response,
+    ) {
+        const { buffer, filename } = await this.orderService.generateInvoicePdf(id_pedido);
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        res.send(buffer);
+    }
+
+    @Post('/:id_pedido/invoice/email')
+    async sendInvoice(
+        @Param('id_pedido', ParseIntPipe) id_pedido: number,
+        @Body() dto: InvoiceEmailDto,
+    ) {
+        return this.orderService.sendInvoiceEmail(id_pedido, dto.email);
     }
 }
