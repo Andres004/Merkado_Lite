@@ -92,7 +92,7 @@ const ProductCard = ({ product }: { product: ProductModel }) => {
             )}
           </div>
           
-          {/* BOTÓN VERDE (El que te gustaba) */}
+          {/* BOTÓN VERDE */}
           <button 
             className="bg-green-500 hover:bg-green-600 text-white p-2.5 rounded-full transition duration-200 shadow-md hover:shadow-lg active:scale-95"
             title="Agregar al carrito"
