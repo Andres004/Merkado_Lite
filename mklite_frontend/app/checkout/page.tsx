@@ -23,8 +23,10 @@ import {
 } from 'lucide-react';
 
 // Servicios (Asegúrate de que estas rutas sean correctas según tu estructura de carpetas)
-import { getCartByUserService, deleteCartItemService } from '../services/cart.service';
-import { createOrderService } from '../services/order.service';
+//import { getCartByUserService, deleteCartItemService } from '../services/cart.service';
+//import { createOrderService } from '../services/order.service';
+import { getCartByUserService } from '../services/cart.service';
+import { savePendingCheckout } from '../utils/checkoutStorage';
 
 // --- IMPORTACIÓN DINÁMICA DEL MAPA ---
 // Esto busca el archivo en src/components/MapSelector.tsx
@@ -156,23 +158,23 @@ export default function CheckoutPage() {
         }))
       };
 
-      // Llamada al servicio (quitamos el tipo explícito para evitar error de TS si no actualizaste el archivo de tipos)
-      await createOrderService(orderData as any);
+            savePendingCheckout({
+        orderPayload: orderData as any,
+        cartId: cart.id_carrito,
+        cartItems: cart.cartItems,
+        summary: {
+          subtotal,
+          shipping: finalShipping,
+          total,
+        },
+        user,
+        paymentStatus: 'pending',
+      });
 
-      // Limpiar carrito visual y lógico
-      const deletePromises = cart.cartItems.map((item: any) => 
-          deleteCartItemService(cart.id_carrito, item.id_producto)
-      );
-      await Promise.all(deletePromises);
-
-      window.dispatchEvent(new Event("cartUpdated"));
-
-      alert("¡Pedido realizado con éxito!");
-      router.push('/perfil/pedidos'); 
-
+      router.push('/pago');
     } catch (error: any) {
       console.error(error);
-      const msg = error.response?.data?.message || "Error al procesar el pedido";
+      const msg = error.response?.data?.message || "Error al preparar el pedido";
       alert("Ocurrió un error: " + msg);
     } finally {
       setProcessing(false);
