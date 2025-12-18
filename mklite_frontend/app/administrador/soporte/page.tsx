@@ -120,7 +120,7 @@ const SupportAdminPage = () => {
 
           <div className="lg:col-span-3 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             
-            {/* --- HEADER MEJORADO VISUALMENTE --- */}
+            {/* --- HEADER --- */}
             <div className="flex items-center gap-4 mb-6 pb-4 border-b border-gray-100">
               <div className="p-3 bg-red-50 rounded-full border border-red-100 shadow-sm flex items-center justify-center">
                 <MessageCircle className="text-[#F40009] w-6 h-6" />
@@ -137,14 +137,20 @@ const SupportAdminPage = () => {
               </div>
             )}
 
+            {/* AQUÍ ESTÁ EL ARREGLO: 
+               1. h-[600px] fija la altura del contenedor principal.
+               2. Los hijos directos (las columnas) tienen h-full para respetar esa altura.
+               3. min-h-0 en los hijos flex evita que el contenido empuje el contenedor infinito.
+            */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-[600px]">
               
               {/* --- LISTA DE CHATS (Izquierda) --- */}
-              <div className="md:col-span-1 border border-gray-200 rounded-lg overflow-hidden flex flex-col bg-white">
+              <div className="md:col-span-1 border border-gray-200 rounded-lg overflow-hidden flex flex-col bg-white h-full">
                 <div className="bg-gray-100 px-4 py-3 text-sm font-bold text-black border-b border-gray-200">
                   Chats Activos
                 </div>
-                <div className="flex-1 overflow-y-auto divide-y divide-gray-100">
+                {/* min-h-0 es clave para el scroll en flexbox anidado */}
+                <div className="flex-1 overflow-y-auto divide-y divide-gray-100 min-h-0">
                   {isLoadingChats ? (
                     <div className="flex items-center justify-center py-6 text-gray-700 font-medium text-sm gap-2">
                       <Loader2 className="animate-spin text-[#F40009]" size={16} /> Cargando...
@@ -160,11 +166,8 @@ const SupportAdminPage = () => {
                             : 'border-transparent hover:bg-gray-50'
                         }`}
                       >
-                        {/* Texto negro intenso para el nombre */}
                         <p className="font-bold text-sm text-black mb-1">{formatName(chat)}</p>
-                        
                         <div className="flex justify-between items-center">
-                           {/* Textos secundarios más oscuros (gray-700 en vez de gray-500) */}
                           <span className="text-xs font-medium text-gray-700 bg-gray-200 px-2 py-0.5 rounded-full">
                             {chat.estado}
                           </span>
@@ -181,10 +184,10 @@ const SupportAdminPage = () => {
               </div>
 
               {/* --- AREA DE MENSAJES (Derecha) --- */}
-              <div className="md:col-span-2 border border-gray-200 rounded-lg flex flex-col bg-white shadow-sm">
+              <div className="md:col-span-2 border border-gray-200 rounded-lg flex flex-col bg-white shadow-sm h-full overflow-hidden">
                 
                 {/* Header del Chat Individual */}
-                <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+                <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between shrink-0">
                   <div>
                     <span className="text-sm font-bold text-black block">
                       {selectedChat ? formatName(selectedChat) : 'Selecciona un chat'}
@@ -195,8 +198,9 @@ const SupportAdminPage = () => {
                   </div>
                 </div>
 
-                {/* Lista de Mensajes */}
-                <div className="flex-1 p-4 space-y-4 overflow-y-auto bg-white">
+                {/* Lista de Mensajes (Scrollable) */}
+                {/* min-h-0 evita el desborde infinito */}
+                <div className="flex-1 p-4 space-y-4 overflow-y-auto bg-white min-h-0">
                   {isLoadingMessages ? (
                     <div className="flex items-center justify-center h-full text-gray-700 font-medium text-sm gap-2">
                       <Loader2 className="animate-spin text-[#F40009]" size={20} /> Cargando historial...
@@ -232,15 +236,14 @@ const SupportAdminPage = () => {
                   <div ref={bottomRef} />
                 </div>
 
-                {/* Input Area */}
-                <div className="border-t border-gray-200 p-3 bg-gray-50 flex items-center gap-2 rounded-b-lg">
+                {/* Input Area (Fixed at bottom) */}
+                <div className="border-t border-gray-200 p-3 bg-gray-50 flex items-center gap-2 shrink-0">
                   <input
                     type="text"
                     value={inputValue}
                     onChange={(e) => setInputValue(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleSend()}
                     placeholder="Escribe una respuesta..."
-                    // AQUI CAMBIE: text-black y placeholder visible
                     className="flex-1 text-sm text-black placeholder:text-gray-500 px-4 py-2.5 bg-white border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-[#F40009] focus:border-transparent transition-all shadow-sm"
                   />
                   <button
