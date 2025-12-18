@@ -1,52 +1,71 @@
+'use client';
+
 // mklite_frontend/app/ofertas/page.tsx
 
-import ProductSidebar from '../components/ProductSidebar';
-import ProductCard from '../components/ProductCard'; 
+import { useEffect, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
-
-// MOCK DATA para el listado (la misma lógica de la Home)
-const mockProducts = [
-  // Deberías llenar esto con más datos para que se vea como en tu diseño
-  { id: 1, name: "Papa Holandesa 1 kg", image: "/images/papa.jpg", price: 13.00, unit: "1 kg" },
-  { id: 2, name: "Papa Holandesa 1 kg", image: "/images/papa.jpg", price: 13.00, unit: "1 kg" },
-  { id: 3, name: "Papa Holandesa 1 kg", image: "/images/papa.jpg", price: 13.00, unit: "1 kg" },
-  { id: 4, name: "Papa Holandesa 1 kg", image: "/images/papa.jpg", price: 13.00, unit: "1 kg" },
-  { id: 5, name: "Papa Holandesa 1 kg", image: "/images/papa.jpg", price: 13.00, unit: "1 kg" },
-  { id: 6, name: "Papa Holandesa 1 kg", image: "/images/papa.jpg", price: 13.00, unit: "1 kg" },
-  // ... (Añadir más productos para que el grid se llene)
-];
+import ProductSidebar from '../components/ProductSidebar';
+import ProductCard from '../components/ProductCard';
+import { getOfferProducts } from '../services/product.service';
+import { ProductModel } from '../models/product.model';
 
 export default function OfertasPage() {
+  const [products, setProducts] = useState<ProductModel[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchOffers = async () => {
+      setLoading(true);
+      const offers = await getOfferProducts();
+      setProducts(offers);
+      setLoading(false);
+    };
+
+    fetchOffers();
+  }, []);
+
+  const renderContent = () => {
+    if (loading) {
+      return (
+        <div className="col-span-full text-center text-gray-500 py-10">Cargando ofertas...</div>
+      );
+    }
+
+    if (!products.length) {
+      return (
+        <div className="col-span-full text-center text-gray-500 py-10 font-semibold">
+          No hay ofertas disponibles por el momento
+        </div>
+      );
+    }
+
+    return products.map((product) => (
+      <ProductCard key={product.id_producto} product={product} />
+    ));
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
-      
-      {/* RUTA DE NAVEGACIÓN (Breadcrumbs) - No visible en el diseño, pero es buena práctica */}
-      <div className="text-sm text-gray-500 mb-6">
-        <a href="/" className="hover:text-red-600">Inicio</a> / <span className="font-semibold text-gray-800">Ofertas de la Semana</span>
+      <div className="text-sm text-gray-500 mb-6 flex items-center gap-2">
+        <a href="/" className="hover:text-red-600">Inicio</a>
+        <ChevronDown size={14} className="text-gray-300 rotate-[-90deg]" />
+        <span className="font-semibold text-gray-800">Ofertas</span>
       </div>
 
-      <div className="flex space-x-8">
-        
-        {/* Columna Izquierda: SIDEBAR DE FILTROS */}
-        <aside className="w-1/4">
+      <div className="flex flex-col lg:flex-row lg:space-x-8">
+        <aside className="lg:w-1/4 mb-6 lg:mb-0">
           <ProductSidebar />
         </aside>
 
-        {/* Columna Derecha: LISTADO DE PRODUCTOS */}
-        <section className="w-3/4">
-          
-          
-          
-          {/* CUADRÍCULA DE PRODUCTOS (Reutilizamos la lógica del grid) */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {mockProducts.map(product => (
-              <ProductCard key={product.id} product={product} />
-            ))}
+        <section className="lg:w-3/4">
+          <div className="flex items-center justify-between mb-4">
+            <h1 className="text-2xl font-extrabold text-gray-900">Ofertas destacadas</h1>
           </div>
 
-          {/* Aquí iría la Paginación */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {renderContent()}
+          </div>
         </section>
-
       </div>
     </div>
   );

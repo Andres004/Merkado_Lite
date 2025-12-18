@@ -15,14 +15,20 @@ export class CartItemController {
   @Post('/add')
   async addProductToCart(@Body() body: { id_usuario: number; id_producto: number; cantidad: number }) {
     // 1. Obtener o crear carrito activo
-    const cart = await this.cartService.findOrCreateActiveCart(body.id_usuario); 
+    const cart = await this.cartService.findOrCreateActiveCart(body.id_usuario);
 
     // 2. Obtener producto
-    const product = await this.productService.getProductById(body.id_producto);
+    const productWithPricing = await this.productService.getProductPricing(body.id_producto);
 
     // 3. Agregar (El servicio valida el stock)
-    return await this.cartItemService.addProductToCart(cart.id_carrito, product, body.cantidad, product.precio_venta);
+    return await this.cartItemService.addProductToCart(
+      cart.id_carrito,
+      productWithPricing,
+      body.cantidad,
+      productWithPricing.finalPrice ?? productWithPricing.precio_venta,
+    );
   }
+
 
   @Get()
   async getAllCartItems() {

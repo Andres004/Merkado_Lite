@@ -154,7 +154,7 @@ export default function CheckoutPage() {
         items: cart.cartItems.map((item: any) => ({
             id_producto: item.id_producto,
             cantidad: item.cantidad,
-            precio_unitario: Number(item.precio_unitario)
+            precio_unitario: Number(item.finalPrice ?? item.precio_unitario)
         }))
       };
 
@@ -380,23 +380,37 @@ export default function CheckoutPage() {
 
                 {/* Lista compacta */}
                 <div className="space-y-4 mb-6 max-h-[250px] overflow-y-auto pr-2 custom-scrollbar">
-                    {cart?.cartItems?.map((item: any) => (
-                    <div key={item.id_producto} className="flex gap-3 items-center">
-                        <div className="w-10 h-10 bg-gray-50 rounded border border-gray-200 flex-shrink-0 relative overflow-hidden">
-                             <Image 
-                                src={item.product?.imagen_url || '/images/placeholder.jpg'} 
-                                alt={item.product?.nombre || 'Producto'} 
-                                fill 
-                                className="object-contain" 
-                             />
+                    {cart?.cartItems?.map((item: any) => {
+                        const unitPrice = Number(item.finalPrice ?? item.precio_unitario ?? 0);
+                        const originalUnitPrice = Number(item.originalPrice ?? unitPrice);
+                        const showDiscount = item.hasDiscount && originalUnitPrice > unitPrice;
+
+                        return (
+                        <div key={item.id_producto} className="flex gap-3 items-center">
+                            <div className="w-10 h-10 bg-gray-50 rounded border border-gray-200 flex-shrink-0 relative overflow-hidden">
+                                 <Image
+                                    src={item.product?.imagen_url || '/images/placeholder.jpg'}
+                                    alt={item.product?.nombre || 'Producto'}
+                                    fill
+                                    className="object-contain"
+                                 />
+                            </div>
+                            <div className="flex-1 text-sm">
+                                <p className="font-bold text-gray-800 line-clamp-1">{item.product?.nombre}</p>
+                                <p className="text-gray-500 text-xs">x{item.cantidad}</p>
+                                {showDiscount && (
+                                    <p className="text-[11px] text-[#F40009] font-semibold">Precio oferta: Bs. {unitPrice.toFixed(2)}</p>
+                                )}
+                            </div>
+                            <div className="text-right">
+                                <p className={`font-bold text-sm ${showDiscount ? 'text-[#F40009]' : ''}`}>Bs. {(item.cantidad * unitPrice).toFixed(2)}</p>
+                                {showDiscount && (
+                                    <p className="text-[11px] text-gray-400 line-through">Bs. {(item.cantidad * originalUnitPrice).toFixed(2)}</p>
+                                )}
+                            </div>
                         </div>
-                        <div className="flex-1 text-sm">
-                            <p className="font-bold text-gray-800 line-clamp-1">{item.product?.nombre}</p>
-                            <p className="text-gray-500 text-xs">x{item.cantidad}</p>
-                        </div>
-                        <p className="font-bold text-sm">Bs. {(item.cantidad * item.precio_unitario).toFixed(2)}</p>
-                    </div>
-                    ))}
+                        );
+                    })}
                 </div>
 
                 {/* Desglose de Costos */}

@@ -2,16 +2,41 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { Cart } from 'src/entity/cart.entity';
 import { AppDataSource } from 'src/data-source';
+import { ProductService } from '../product/product.service';
 
 @Injectable()
 export class CartService {
   private cartRepository: Repository<Cart>;
 
-  constructor() {
+  constructor(private readonly productService: ProductService) {
     if (!AppDataSource.isInitialized) {
         throw new Error('DataSource no está inicializado');
     }
     this.cartRepository = AppDataSource.getRepository(Cart);
+  }
+
+  private async buildCartItemsWithPricing(cart: Cart) {
+    const enhancedItems = await Promise.all(
+      (cart.cartItems || []).map(async (item) => {
+        const productWithPricing = await this.productService.getProductPricing(item.product.id_producto, item.product);
+        const unitPrice = productWithPricing.finalPrice ?? Number(item.precio_unitario);
+
+        return {
+          ...item,
+          product: productWithPricing,
+          finalPrice: unitPrice,
+          precio_unitario: unitPrice,
+          hasDiscount: productWithPricing.hasDiscount,
+          originalPrice: productWithPricing.originalPrice,
+        } as any;
+      })
+    );
+
+    const totalEstimado = enhancedItems.reduce((acc, item: any) => {
+      return acc + Number(item.precio_unitario) * item.cantidad;
+    }, 0);
+
+    return { enhancedItems, totalEstimado };
   }
 
   async createCart(cart: Cart): Promise<Cart> {
@@ -33,15 +58,13 @@ export class CartService {
       throw new NotFoundException(`Carrito con ID ${id_carrito} no encontrado`);
     }
 
-    // Calculamos la suma: (Precio * Cantidad) de cada item
-    const totalCalculado = cart.cartItems.reduce((acc, item) => {
-        return acc + (Number(item.precio_unitario) * item.cantidad);
-    }, 0);
+    const { enhancedItems, totalEstimado } = await this.buildCartItemsWithPricing(cart);
 
     // Devolvemos el objeto carrito mezclado con el nuevo campo
     return {
         ...cart,
-        totalEstimado: totalCalculado 
+        cartItems: enhancedItems,
+        totalEstimado
     };
   }
 
@@ -92,11 +115,8 @@ export class CartService {
       return { ...cart, totalEstimado: 0 };
     }
 
-    // Si ya existe, calculamos el total
-    const totalCalculado = cart.cartItems ? cart.cartItems.reduce((acc, item) => {
-        return acc + (Number(item.precio_unitario) * item.cantidad);
-    }, 0) : 0;
+    const { enhancedItems, totalEstimado } = await this.buildCartItemsWithPricing(cart);
 
-    return { ...cart, totalEstimado: totalCalculado };
+    return { ...cart, cartItems: enhancedItems, totalEstimado };
   }
 }
