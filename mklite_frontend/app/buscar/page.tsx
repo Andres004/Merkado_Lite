@@ -1,13 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Search } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
 import { searchProducts } from '../services/product.service';
 import { ProductModel } from '../models/product.model';
 
-const SearchPage = () => {
+const SearchContent = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const query = searchParams.get('q') || '';
@@ -21,9 +21,14 @@ const SearchPage = () => {
         return;
       }
       setLoading(true);
-      const data = await searchProducts(query);
-      setProducts(data);
-      setLoading(false);
+      try {
+          const data = await searchProducts(query);
+          setProducts(data);
+      } catch (error) {
+          console.error(error);
+      } finally {
+          setLoading(false);
+      }
     };
     fetchResults();
   }, [query]);
@@ -53,7 +58,7 @@ const SearchPage = () => {
             />
             <button
               type="submit"
-              className="bg-[#F40009] text-white h-full px-4 flex items-center gap-2 font-semibold"
+              className="bg-[#F40009] text-white h-full px-4 flex items-center gap-2 font-semibold hover:bg-red-700 transition-colors"
             >
               <Search size={18} /> Buscar
             </button>
@@ -63,11 +68,13 @@ const SearchPage = () => {
 
       <section className="max-w-7xl mx-auto px-4 pt-8">
         {loading ? (
-          <div className="text-gray-600">Buscando productos...</div>
+          <div className="flex justify-center py-20">
+             <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-[#F40009]"></div>
+          </div>
         ) : !query.trim() ? (
-          <div className="text-gray-600">Ingresa un término para buscar productos.</div>
+          <div className="text-gray-600 text-center py-10">Ingresa un término para buscar productos.</div>
         ) : products.length === 0 ? (
-          <div className="text-gray-600">No se encontraron productos para "{query}".</div>
+          <div className="text-gray-600 text-center py-10">No se encontraron productos para "{query}".</div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
             {products.map((product) => (
@@ -80,4 +87,14 @@ const SearchPage = () => {
   );
 };
 
-export default SearchPage;
+export default function SearchPage() {
+  return (
+    <Suspense fallback={
+        <div className="min-h-screen bg-gray-50 flex justify-center items-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-[#F40009]"></div>
+        </div>
+    }>
+      <SearchContent />
+    </Suspense>
+  );
+}
