@@ -8,8 +8,4 @@ import { UserRoleController } from "./userrole.controller";
     controllers: [UserRoleController],
     providers: [UserRoleService],
 })
-<<<<<<< HEAD
-export class UserRoleModule {}
-=======
 export class UserroleModule {}
->>>>>>> Backend-andy
