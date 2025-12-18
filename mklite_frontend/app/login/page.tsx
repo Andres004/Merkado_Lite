@@ -149,7 +149,8 @@ export default function LoginPage() {
       }
 
       // Si es CLIENTE u otro rol
-      window.location.href = '/';
+      //window.location.href = '/';
+      window.location.href = '/checkout';
 
     } catch (err: any) {
       console.error('Error login:', err);
