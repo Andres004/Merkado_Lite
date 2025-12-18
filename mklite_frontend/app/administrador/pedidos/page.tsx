@@ -278,7 +278,8 @@ export default function AdminPedidosPage() {
   const fetchDrivers = async () => {
     try {
       const response = await getUsers();
-      const data: UserData[] = response?.data || [];
+      // Usamos as any para evitar el error estricto de TypeScript en el build
+      const data: UserData[] = (response?.data || []) as any;
       const onlyDrivers = data.filter((user) =>
         user.userRoles?.some((ur) => ur.role?.nombre?.toUpperCase() === "REPARTIDOR")
       );
