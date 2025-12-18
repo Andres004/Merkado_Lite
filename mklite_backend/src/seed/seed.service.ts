@@ -853,7 +853,7 @@ export class SeedService implements OnModuleInit {
           (?, ?, 'delivery', 'tarjeta', ?,
            ?, ?,
            ?, ?, ?,
-           ?, 'express', 0, NULL, 1)
+           ?, 'a domicilio', 0, NULL, 1)
         ON DUPLICATE KEY UPDATE
           estado = VALUES(estado),
           fecha_actualizacion = VALUES(fecha_actualizacion);
