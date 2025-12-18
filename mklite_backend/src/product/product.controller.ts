@@ -17,6 +17,12 @@ export class ProductController {
     return await this.productService.getAllProducts();
   }
 
+    @Get('/offers')
+  async getOfferProducts() {
+    return await this.productService.getOfferProducts();
+  }
+
+
    @Get('/search')
   async searchProducts(@Query('q') query: string) {
     return await this.productService.searchProducts(query);
