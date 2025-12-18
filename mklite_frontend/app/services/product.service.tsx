@@ -1,6 +1,3 @@
-+14
--1
-
 import api from '../utils/axios'; // instancia de Axios configurada
 import { ProductModel } from '../models/product.model';
 
@@ -66,4 +63,15 @@ export const getProductsByCategoryId = async (id_categoria: number): Promise<Pro
         console.error(`Error al obtener productos de la categoría ${id_categoria}:`, error);
         return [];
     }
+}
+
+export const getOfferProducts = async (): Promise<ProductModel[]> => {
+    try {
+        const response = await api.get<ProductModel[]>(`${PRODUCT_URL}/offers`);
+        return response.data;
+    } catch (error) {
+        console.error('Error al obtener ofertas:', error);
+        return [];
+    }
+    
 }

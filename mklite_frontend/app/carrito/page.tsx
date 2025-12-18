@@ -144,9 +144,14 @@ export default function CartPage() {
                 <span className="w-1/6 text-right">Total</span>
              </div>
 
-            {cart.cartItems.map((item: any) => (
-                <div 
-                    key={item.id_producto} 
+            {cart.cartItems.map((item: any) => {
+                const unitPrice = Number(item.finalPrice ?? item.precio_unitario ?? 0);
+                const originalUnitPrice = Number(item.originalPrice ?? unitPrice);
+                const showDiscount = item.hasDiscount && originalUnitPrice > unitPrice;
+
+                return (
+                <div
+                    key={item.id_producto}
                     className="group bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-gray-100 hover:border-red-200 hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all duration-300 flex flex-col sm:flex-row items-center gap-6 relative overflow-hidden"
                 >
                     {/* Decoración hover */}
@@ -170,8 +175,16 @@ export default function CartPage() {
                                 {item.product?.nombre}
                             </h3>
                         </Link>
-                        <p className="text-sm text-gray-400 mt-1 font-medium">
-                            Unitario: <span className="text-gray-600">Bs. {Number(item.precio_unitario).toFixed(2)}</span>
+                        <p className="text-sm text-gray-400 mt-1 font-medium flex items-center gap-2 flex-wrap">
+                            <span>Unitario:</span>
+                            <span className={`text-gray-600 ${showDiscount ? 'line-through' : ''}`}>
+                                Bs. {originalUnitPrice.toFixed(2)}
+                            </span>
+                            {showDiscount && (
+                                <span className="text-[#F40009] font-semibold">
+                                    Bs. {unitPrice.toFixed(2)}
+                                </span>
+                            )}
                         </p>
                     </div>
 
@@ -197,7 +210,7 @@ export default function CartPage() {
                     {/* Subtotal y Borrar */}
                     <div className="flex flex-row sm:flex-col items-center justify-between w-full sm:w-auto sm:items-end gap-4 sm:gap-2 pl-4">
                         <span className="font-extrabold text-lg text-gray-900">
-                            Bs. {(Number(item.precio_unitario) * item.cantidad).toFixed(2)}
+                            Bs. {(unitPrice * item.cantidad).toFixed(2)}
                         </span>
                         
                         <button 
@@ -209,7 +222,8 @@ export default function CartPage() {
                         </button>
                     </div>
                 </div>
-            ))}
+            );
+            })}
 
             <Link href="/categorias" className="inline-flex items-center text-gray-500 hover:text-[#F40009] font-medium mt-8 transition-colors group px-2">
                 <ArrowLeft size={18} className="mr-2 group-hover:-translate-x-1 transition-transform" />

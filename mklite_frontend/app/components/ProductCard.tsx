@@ -12,16 +12,15 @@ const ProductCard = ({ product }: { product: ProductModel }) => {
   const router = useRouter();
   const { isFavorite, toggleFavorite, isAuthenticated } = useFavorites();
   const favorite = isFavorite(product.id_producto);
-  // -------------------------------------------------------
-  // LÓGICA DE DESCUENTO (Adaptada a tu BD actual)
-  // -------------------------------------------------------
-  // Como tu base de datos actual (MySQL) aún no tiene campos de "oferta",
-  // he dejado esta lógica preparada. Si en el futuro agregas 'precio_antiguo'
-  // a tu tabla, descomenta y ajusta esto.
-  
-  const oldPrice = undefined; // product.precio_antiguo (Si existiera en BD)
-  const discountPercent = 0;  // Calculo automático si tuvieras oldPrice
-  const isDiscounted = false; // Cambiar a: oldPrice && oldPrice > product.precio_venta;
+  const originalPrice = product.originalPrice ?? product.precio_venta;
+  const finalPrice = product.finalPrice ?? product.precio_venta;
+  const hasDiscount = !!product.hasDiscount && finalPrice < originalPrice;
+  const discountLabel =
+    product.discountType === 'PERCENT' && product.discountValue
+      ? `${product.discountValue}% OFF`
+      : product.discountType === 'FIXED' && product.discountValue
+        ? `Bs. -${product.discountValue}`
+        : null;
   const handleFavoriteClick = async () => {
     if (!isAuthenticated) {
       router.push('/login');
@@ -47,9 +46,9 @@ const ProductCard = ({ product }: { product: ProductModel }) => {
     <div className="bg-white p-4 shadow-sm border border-gray-100 rounded-lg group transition duration-300 relative overflow-hidden flex flex-col h-full hover:shadow-xl">
       
       {/* 1. ETIQUETA DE DESCUENTO (Solo se muestra si hay descuento) */}
-      {isDiscounted && (
+      {hasDiscount && discountLabel && (
         <span className="absolute top-0 left-0 bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-br-lg z-20">
-          -{discountPercent}%
+          {discountLabel}
         </span>
       )}
 
@@ -111,12 +110,12 @@ const ProductCard = ({ product }: { product: ProductModel }) => {
           
           {/* Precios */}
           <div className="flex flex-col">
-            <span className="text-lg font-extrabold text-gray-900">
-              Bs. {product.precio_venta}
+            <span className={`text-lg font-extrabold ${hasDiscount ? 'text-red-600' : 'text-gray-900'}`}>
+              Bs. {Number(finalPrice).toFixed(2)}
             </span>
-            {isDiscounted && oldPrice && (
+            {hasDiscount && (
               <span className="text-xs text-gray-400 line-through">
-                Bs. {oldPrice}
+                Bs. {Number(originalPrice).toFixed(2)}
               </span>
             )}
           </div>

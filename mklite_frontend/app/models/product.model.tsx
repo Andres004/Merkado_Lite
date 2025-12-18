@@ -1,3 +1,6 @@
++12
+-3
+
 export interface CategoryModel {
     id_categoria: number;
     nombre: string;
@@ -14,8 +17,18 @@ export interface ProductModel {
     id_producto: number;
     nombre: string;
     descripcion: string;
-    precio_venta: number;        
-    imagen_url: string;      
+    precio_venta: number;
+    imagen_url: string;
+
+    // Precios derivados (ofertas)
+    hasDiscount?: boolean;
+    discountType?: 'PERCENT' | 'FIXED' | null;
+    discountValue?: number;
+    discountPercent?: number;
+    discountAmount?: number;
+    originalPrice?: number;
+    finalPrice?: number;
+   
     
     // Relaciones
     productCategories?: {
